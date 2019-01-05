@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Node Kinect2 Client</title>
+	<link rel="stylesheet" href="">
+</head>
+<body>
+  <b>Recording:</b>
+  <input id="startRecordingButton" type="Button" value="Start"> &nbsp;&nbsp;
+  <input id="stopRecordingButton" type="Button" value="Stop"> &nbsp;&nbsp;
+  <p>
+  <b>Viewing:</b>
+  <input id="startViewingButton" type="Button" value="Start"> &nbsp;&nbsp;
+  <input id="stopViewingButton" type="Button" value="Stop"> &nbsp;&nbsp;
+  <br>
+  <p></p>
+  <canvas id="bodyCanvas" width="640" height="360"></canvas>
+  <p>
+    <div id="stats"></div>
+  <script src="js/jquery-3.1.0.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/sprintf.js"></script>
+  <script src="js/bodyDrawing.js"></script>
+  <script src="js/recordClient.js"></script>
+</body>
+</html>

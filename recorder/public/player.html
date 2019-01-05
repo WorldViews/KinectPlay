@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Player</title>
+	<link rel="stylesheet" href="">
+</head>
+<body>
+  <p>
+  <b><span id="sessionName">xxx</span></b>
+  <p>
+  <b>Controls:</b>
+  <input id="resetButton" type="Button" value="<<"> &nbsp;&nbsp;
+  <input id="playButton" type="Button" value="Play"> &nbsp;&nbsp;
+  <input id="pauseButton" type="Button" value="Pause"> &nbsp;&nbsp;
+  <br>
+  <input id="timeSlider" type="range" min="0" max="1000"
+         style="width:90%;">
+  <br>
+  <canvas id="bodyCanvas" width="640" height="360"></canvas>
+  <p>
+    <div id="stats"></div>
+  <img id="img1" width=64 height=48 style="display:none"></img>
+  <script src="js/jquery-3.1.0.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/sprintf.js"></script>
+  <script src="js/playClient.js"></script>
+  <script src="js/bodyDrawing.js"></script>
+  <br>
+  Sessions:
+  <div id="sessionList">
+  </div>
+</body>
+</html>
