@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+Thumbs.db
+*~
+fxpal/recorder/frames/*
+fxpal/recorder/recordings/*
+build/
+junk/
+*/junk/
+.node_pre_gyprc
