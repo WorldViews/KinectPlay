@@ -1,5 +1,5 @@
 
-var Kinect2 = require('../../lib/kinect2'), //change to 'kinect2' in a project of your own
+var Kinect2 = require('../lib/kinect2'), //change to 'kinect2' in a project of your own
     express = require('express'),
     app = express(),
     recsApp = express();

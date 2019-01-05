@@ -9,7 +9,7 @@
   "author": "Wouter Verweirder <wouter.verweirder@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "express": "~4.9.5",
+    "express": "^4.16.4",
     "socket.io": "~1.1.0"
   }
 }
