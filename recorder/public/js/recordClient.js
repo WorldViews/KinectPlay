@@ -1,4 +1,23 @@
 
+var lastBodyFrame = null;
+var compression = 3;
+//compression = 5;
+//compression = 4;
+var canvWd = 1920/compression;
+var canvHt = 1080/compression;
+
+function setCompression(c)
+{
+    alert("setCompression "+c);
+    compression = c;
+    canvWd = 1920/compression;
+    canvHt = 1080/compression;
+    colorWorkerThread.postMessage({
+        "message": "setImageData",
+        "imageData": bodyDrawer.ctx.createImageData(canvWd, canvHt)
+    });
+}
+
 getParameterByName = function(name, defaultVal) {
     if (typeof window === 'undefined') {
         console.log("***** getParameterByName called outside of browser...");
@@ -51,7 +70,6 @@ function handleStats(stats){
         bfn, bfn/dt, cfn, cfn/dt, stats.recording, stats.viewing, stats.recSession);
     if (compression != stats.compression) {
         str += "*** compression mismatch ***"
-        alert("setting compression to server val "+stats.compression);
         setCompression(stats.compression);
     }
     $("#stats").html(str);
@@ -63,12 +81,43 @@ socket.on('bodyFrame', function(bodyFrame){
     lastBodyFrame = bodyFrame;
 });
 
+var canvas2 = null;
+function imagedata_to_image(imagedata) {
+    //console.log("imagedata_to_image "+imagedata.width+" "+imagedata.height);
+    if (canvas2 == null) {
+        console.log("Creating canvas2");
+        canvas2 = document.createElement('canvas');
+    }
+    var ctx = canvas2.getContext('2d');
+    canvas2.width = imagedata.width;
+    canvas2.height = imagedata.height;
+    ctx.putImageData(imagedata, 0, 0);
+
+    var image = new Image();
+    image.src = canvas2.toDataURL();
+    //console.log("image w h "+image.width+" "+image.height);
+    return image;
+}
+/*
 colorWorkerThread.addEventListener("message", function (event) {
     if(event.data.message === 'imageReady') {
         bodyDrawer.clearBackground();
         bodyDrawer.ctx.putImageData(event.data.imageData, 0, 0);
+        //bodyDrawer.ctx.putImageData(event.data.imageData, 0, 0, 0, 0, 900, 700);
         colorProcessing = false;
     	bodyDrawer.draw(lastBodyFrame);
+    }
+});
+*/
+colorWorkerThread.addEventListener("message", function (event) {
+    if(event.data.message === 'imageReady') {
+        var img = imagedata_to_image(event.data.imageData)
+        colorProcessing = false;
+        img.addEventListener('load', () => {
+            console.log("after load image w h "+img.width+" "+img.height);
+            bodyDrawer.clearBackground(img);
+    	    bodyDrawer.draw(lastBodyFrame);
+        });
     }
 });
 

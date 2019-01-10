@@ -1,23 +1,8 @@
 
 
-var lastBodyFrame = null;
-
-var compression = 3;
-//compression = 4;
-compression = 5;
-var canvWd = 1920/compression;
-var canvHt = 1080/compression;
-
 var LHAND = 7;
 var RHAND = 11;
 var TRAIL_JOINTS = [RHAND, LHAND];
-
-function setCompression(c)
-{
-    compression = c;
-    canvWd = 1920/compression;
-    canvHt = 1080/compression;
-}
 
 var colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff'];
 
@@ -39,15 +24,19 @@ class BodyDrawer
     constructor() {
         this.canvas = document.getElementById('bodyCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.trailPoints = null;
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
     }
 
     clearBackground(img)
     {
+        console.log("clearBackground "+img);
         var ctx = this.ctx;
         ctx.fillStyle = "white";
+        ctx.fillStyle = "pink";
         ctx.fillRect(0, 0, 1000, 1000);
         if (img) {
+/*
             if (canvWd != img.width) {
                 console.log("width: "+img.naturalWidth+"  height: "+img.naturalHeight);
                 //canvWd = img.width;
@@ -55,7 +44,9 @@ class BodyDrawer
                 canvWd = img.naturalWidth;
                 canvHt = img.naturalHeight;
             }
-            ctx.drawImage(img, 0, 0);
+            //ctx.drawImage(img, 0, 0, 900, 700);
+*/
+            ctx.drawImage(img, 0, 0, this.width, this.height);
         }
     }
 
@@ -88,7 +79,7 @@ class BodyDrawer
 	for(var jointType in body.joints) {
 	    var joint = body.joints[jointType];
 	    ctx.fillStyle = colors[index];
-            ctx.fillRect(joint.colorX * canvWd, joint.colorY * canvHt, 10, 10);
+            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
 	}
 	//draw hand states
         this.updateHandState(body.leftHandState, body.joints[7]);
@@ -101,7 +92,7 @@ class BodyDrawer
         ctx.globalAlpha = 0.75;
         ctx.beginPath();
         ctx.fillStyle = handColor;
-        ctx.arc(jointPoint.colorX * canvWd, jointPoint.colorY * canvHt, HANDSIZE, 0, Math.PI * 2, true);
+        ctx.arc(jointPoint.colorX * this.width, jointPoint.colorY * this.height, HANDSIZE, 0, Math.PI * 2, true);
         ctx.fill();
         ctx.closePath();
         ctx.globalAlpha = 1;
@@ -129,7 +120,6 @@ class BodyDrawer
 
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = color;
-
         ctx.beginPath();
         for (var i = 0; i < pts.length; i++)
         {
@@ -148,18 +138,15 @@ class BodyDrawer
             var frame = frames[i];
             var body = frame.bodies[bodyIdx];
             var joint = body.joints[jointId];
-            pts.push([joint.colorX*canvWd, joint.colorY*canvHt]);
+            pts.push([joint.colorX*this.width, joint.colorY*this.height]);
         }
         return pts;
     }
     
     drawTrail(frames, bodyIdx, jointId, color, low, high) {
         console.log("drawTrail "+bodyIdx+" "+jointId);
-        //console.log("points: "+pts);
-        //this.trailPoints = pts;
-        //this.trailPoints = this.computeTrail(frames, bodyIdx, jointId, 0, frames.length);
-        this.trailPoints = this.computeTrail(frames, bodyIdx, jointId, low, high);
-        this.drawPolyline(this.trailPoints, color);
+        var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
+        this.drawPolyline(pts, color);
     }
 }
 

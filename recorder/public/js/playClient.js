@@ -18,6 +18,7 @@ function getClockTime()
 
 var defaultRecId = "2018_12_31__23_22_40";
 var player = null;
+var lastBodyFrame = null;
 
 function loadSessions()
 {
