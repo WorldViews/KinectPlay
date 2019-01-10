@@ -92,7 +92,13 @@ class Player {
             this.seekIdx(1);
             this.play();
             $("#sessionName").html(this.recordingId);
+            inst.onSessionReady();
         });
+    }
+
+    onSessionReady() {
+        var RHAND = 11;
+//        bodyDrawer.drawTrail(this.bodyFrames, 0, RHAND);
     }
     
     play() {
@@ -128,10 +134,12 @@ class Player {
     }
 }
 
+var bodyDrawer = null;
 
 $(document).ready(()=> {
     console.log("************READY**********");
     var recId = getParameterByName("recId");
+    bodyDrawer = new BodyDrawer();
     if (!recId)
         recId = defaultRecId;
     player = new Player(recId);
@@ -152,8 +160,8 @@ $(document).ready(()=> {
     $("#img1").on('load', () => {
         //console.log("Image1 loaded ");
         var img = document.getElementById("img1");
-        clearBackground(img);
-        drawBodies(lastBodyFrame);
+        bodyDrawer.clearBackground(img);
+        bodyDrawer.draw(lastBodyFrame, player);
     });
     loadSessions();
 })

@@ -16,12 +16,10 @@ function getClockTime()
     return new Date().getTime()/1000.0;
 }
 
+var bodyDrawer = null;
 var socket = io.connect('/');
-var canvas = document.getElementById('bodyCanvas');
 var colorProcessing = false;
 var colorWorkerThread = new Worker("js/colorWorker.js");
-
-//var ctx = canvas.getContext('2d');
 
 var bfn0 = -1;
 var cfn0 = -1;
@@ -67,17 +65,11 @@ socket.on('bodyFrame', function(bodyFrame){
 
 colorWorkerThread.addEventListener("message", function (event) {
     if(event.data.message === 'imageReady') {
-        clearBackground();
-        ctx.putImageData(event.data.imageData, 0, 0);
+        bodyDrawer.clearBackground();
+        bodyDrawer.ctx.putImageData(event.data.imageData, 0, 0);
         colorProcessing = false;
-    	drawBodies(lastBodyFrame);
+    	bodyDrawer.draw(lastBodyFrame);
     }
-});
-
-colorWorkerThread.postMessage({
-    "message": "setImageData",
-//    "imageData": ctx.createImageData(canvas.width, canvas.height)
-    "imageData": ctx.createImageData(canvWd, canvHt)
 });
 
 socket.on('colorFrame', function(imageBuffer){
@@ -90,6 +82,11 @@ socket.on('colorFrame', function(imageBuffer){
 
 $(document).ready(()=> {
     console.log("************READY**********");
+    bodyDrawer = new BodyDrawer();
+    colorWorkerThread.postMessage({
+        "message": "setImageData",
+        "imageData": bodyDrawer.ctx.createImageData(canvWd, canvHt)
+    });
     $("#startRecordingButton").click(() => {
         console.log("start recording");
         $.get("/startRecording", (data) => { console.log("ok"); });
