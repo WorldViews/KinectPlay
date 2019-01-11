@@ -54,12 +54,13 @@ class Player {
         this.frameNum = 0;
         this.numFrames = 0;
         this.prevFrameNum = 0;
+        this.framesPerSec = 30.0;
         this.bodyFrames = [];
         this.loadIndex();
         this.playing = false;
     }
 
-    seekIdx(idx) {
+    seekIdx_(idx) {
         if (idx <= 0)
             idx = 1;
         if (idx >= this.numFrames)
@@ -68,6 +69,26 @@ class Player {
         this.prevFrame = null;
     }
     
+    seekIdx(idx) {
+        this.seekIdx_(idx);
+    }
+
+    getCurrentIdx() {
+        return this.frameNum;
+    }
+
+    getCurrentTime() {
+        return this.frameNum / this.framesPerSec;
+    }
+    
+    showTime() {
+        if (this.bodyFrames.length == 0)
+            return;
+        var v = this.frameNum * 1000 / this.bodyFrames.length;
+        $("#timeSlider").val(v);
+        $("#time").html(sprintf("%.2f", this.getCurrentTime()));
+    }
+
     loadIndex() {
         this.loading = true;
         this.frameNum = 0;
@@ -132,6 +153,7 @@ class Player {
             lastBodyFrame = frame;
             //drawBodies(frame);
         }
+        this.showTime();
     }
 }
 
@@ -153,7 +175,7 @@ $(document).ready(()=> {
 //    });
     $("#timeSlider").on('input', () => {
         var val = $("#timeSlider").val();
-        console.log("slider: "+val);
+        // console.log("slider: "+val);
         var rt = val/1000.0;
         var i = Math.round(rt*player.numFrames);
         player.seekIdx(i);

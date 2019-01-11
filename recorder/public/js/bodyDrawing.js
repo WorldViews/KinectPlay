@@ -153,21 +153,23 @@ class BodyDrawer
         }
         this.player = player;
         var showTrails = $("#showTrails").is(':checked');
-        var index = 0;
+        var bodyIndex = 0;
         var inst = this;
-        bodyFrame.bodies.forEach(function(body){
+        for (bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
+            var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
-                inst.drawBody(body, index);
+                inst.drawBody(body, bodyIndex);
                 if (showTrails) {
                     //inst.drawTrail(player.bodyFrames, index, RHAND, 0, frames.length);
                     for (var i=0; i<TRAIL_JOINTS.length; i++) {
                         var joint = TRAIL_JOINTS[i];
                         var color = colors[i];
-                        inst.drawTrail(player.bodyFrames, index, joint, color, player.frameNum-30, player.frameNum+30);
+                        inst.drawTrail(player.bodyFrames, bodyIndex,
+                                       joint, color, player.frameNum-30, player.frameNum+30);
                     }
                 }
-	        index++;
-            }});
+            }
+        }
     }
 
     drawBody(body, index) {
