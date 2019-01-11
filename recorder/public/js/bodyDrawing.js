@@ -64,6 +64,7 @@ class BodyDrawer
         this.visibleJoints = {};
         this.trails = {};
         this.trailsLow = {};
+        this.mousePoint = null;
         var vj = this.visibleJoints;
         vj[RHAND] = true;
         vj[LHAND] = true;
@@ -79,6 +80,7 @@ class BodyDrawer
         console.log("mouseDown");
         var pt = getMousePos(this.canvas, e);
         this.mouseIsDown = true;
+        this.mousePoint = pt;
         this.findDraggedJoint(pt);
     }
 
@@ -99,6 +101,7 @@ class BodyDrawer
     dragJoint(jointIdx, pt) {
         var pts = this.trails[jointIdx];
         var ret = findNearestPoint(pts, pt);
+        this.nearestPoint = ret.pt;
         console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
         var n = this.trailsLow[jointIdx] + ret.iMin;
         this.player.seekIdx(n);
@@ -109,30 +112,18 @@ class BodyDrawer
         //console.log("mouseMove "+x+" "+y);
         if (!this.mouseIsDown)
             return;
+        this.mousePoint = pt;
         console.log("mouseDrag "+pt);
         if (this.draggedJoint >= 0)
             this.dragJoint(this.draggedJoint, pt);
     }
 
     onMouseUp(e) {
-        console.log("mouseDown");
+        console.log("mouseUp");
         this.mouseIsDown = false;
+        this.mousePoint = null;
     }
 
-    /*
-    findNearestTrailPoint(pt) {
-        for (var jointIdx in this.trails) {
-            var pts = this.trails[jointIdx];
-            var ret = findNearestPoint(pts, pt);
-            console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
-            if (ret.d < 10) {
-                var n = this.trailsLow[jointIdx] + ret.iMin;
-                this.player.seekIdx(n);
-            }
-        }
-    }
-    */
-    
     clearBackground(img)
     {
         //console.log("clearBackground "+img);
@@ -246,6 +237,18 @@ class BodyDrawer
         }
         return pts;
     }
+
+    drawDrag() {
+        if (!this.mousePoint || !this.nearestPoint)
+            return;
+        var ctx = this.ctx;
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = 'pink';
+        ctx.beginPath();
+        ctx.moveTo(this.nearestPoint[0], this.nearestPoint[1]);
+        ctx.lineTo(this.mousePoint[0], this.mousePoint[1]);
+        ctx.stroke();
+    }
     
     drawTrail(frames, bodyIdx, jointId, color, low, high) {
         //console.log("drawTrail "+bodyIdx+" "+jointId);
@@ -253,6 +256,7 @@ class BodyDrawer
         this.trails[jointId] = pts;
         this.trailsLow[jointId] = low;
         this.drawPolyline(pts, color);
+        this.drawDrag();
     }
 }
 
