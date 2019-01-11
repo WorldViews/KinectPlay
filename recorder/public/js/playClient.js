@@ -18,7 +18,6 @@ function getClockTime()
 
 var defaultRecId = "2018_12_31__23_22_40";
 var player = null;
-var lastBodyFrame = null;
 
 function loadSessions()
 {
@@ -43,6 +42,13 @@ class Player {
     constructor(recId) {
         this.setSession(recId);
         var inst = this;
+        this.bodyDrawer = new BodyDrawer();
+        $("#img1").on('load', () => {
+            //console.log("Image1 loaded ");
+            var img = document.getElementById("img1");
+            inst.bodyDrawer.clearBackground(img);
+            inst.bodyDrawer.draw(this.lastBodyFrame, player);
+        });
         setInterval(() => {inst.tick()}, 50);
     }
 
@@ -150,41 +156,31 @@ class Player {
         }
         var frame = this.bodyFrames[this.frameNum];
         if (frame) {
-            lastBodyFrame = frame;
+            this.lastBodyFrame = frame;
             //drawBodies(frame);
         }
         this.showTime();
     }
 }
 
-var bodyDrawer = null;
+//var bodyDrawer = null;
 
 $(document).ready(()=> {
     console.log("************READY**********");
     var recId = getParameterByName("recId");
-    bodyDrawer = new BodyDrawer();
+    //bodyDrawer = new BodyDrawer();
     if (!recId)
         recId = defaultRecId;
     player = new Player(recId);
     $("#resetButton").click(() => { player.seekIdx(1); });
     $("#playButton").click(() => { player.play(); });
     $("#pauseButton").click(() => { player.pause(); });
-//    $("#timeSlider").on('change', () => {
-//        var val = $("#timeSlider").val();
-//        console.log("slider change: "+val);
-//    });
     $("#timeSlider").on('input', () => {
         var val = $("#timeSlider").val();
         // console.log("slider: "+val);
         var rt = val/1000.0;
         var i = Math.round(rt*player.numFrames);
         player.seekIdx(i);
-    });
-    $("#img1").on('load', () => {
-        //console.log("Image1 loaded ");
-        var img = document.getElementById("img1");
-        bodyDrawer.clearBackground(img);
-        bodyDrawer.draw(lastBodyFrame, player);
     });
     loadSessions();
 })
