@@ -18,34 +18,129 @@ var HANDOPENCOLOR = "green";
 // lasso hand state color
 var HANDLASSOCOLOR = "blue";
 
+function dist2(pt1, pt2)
+{
+    var dx = pt1[0]-pt2[0];
+    var dy = pt1[1]-pt2[1];
+    return dx*dx+dy*dy;
+}
+
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return [evt.clientX - rect.left, evt.clientY - rect.top];
+//    return {
+//      x: evt.clientX - rect.left,
+//      y: 
+//    };
+}
+
+function findNearestPoint(pts, pt)
+{
+    var d2Min = 1.0E100;
+    var iMin = null;
+    
+    for (var i=0; i<pts.length; i++) {
+        var d2 = dist2(pts[i],pt);
+        if (d2 < d2Min) {
+            iMin = i;
+            d2Min = d2;
+        }
+    }
+    var ret = {iMin, d: Math.sqrt(d2Min)};
+    if (iMin != null)
+        ret.pt = pts[iMin];
+    return ret;
+}
 
 class BodyDrawer
 {
     constructor() {
+        var inst = this;
+        this.player = null;
         this.canvas = document.getElementById('bodyCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+        this.visibleJoints = {};
+        this.trails = {};
+        this.trailsLow = {};
+        var vj = this.visibleJoints;
+        vj[RHAND] = true;
+        vj[LHAND] = true;
+        //this.visibleJoints = {7: true, 11: true, 4:true, 5:true};
+        console.log("Visible Joints: "+JSON.stringify(this.visibleJoints));
+        this.mouseIsDown = false;
+        $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
+        $("#bodyCanvas").mousedown(e => inst.onMouseDown(e));
+        $("#bodyCanvas").mouseup(e => inst.onMouseUp(e));
     }
 
+    onMouseDown(e) {
+        console.log("mouseDown");
+        var pt = getMousePos(this.canvas, e);
+        this.mouseIsDown = true;
+        this.findDraggedJoint(pt);
+    }
+
+    findDraggedJoint(pt) {
+        this.draggedJoint = -1;
+        for (var jointIdx in this.trails) {
+            var pts = this.trails[jointIdx];
+            var ret = findNearestPoint(pts, pt);
+            console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
+            if (ret.d < 10) {
+                this.draggedJoint = jointIdx;
+                var n = this.trailsLow[jointIdx] + ret.iMin;
+                this.player.seekIdx(n);
+            }
+        }
+    }
+
+    dragJoint(jointIdx, pt) {
+        var pts = this.trails[jointIdx];
+        var ret = findNearestPoint(pts, pt);
+        console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
+        var n = this.trailsLow[jointIdx] + ret.iMin;
+        this.player.seekIdx(n);
+    }
+
+    onMouseMove(e) {
+        var pt = getMousePos(this.canvas, e);
+        //console.log("mouseMove "+x+" "+y);
+        if (!this.mouseIsDown)
+            return;
+        console.log("mouseDrag "+pt);
+        if (this.draggedJoint >= 0)
+            this.dragJoint(this.draggedJoint, pt);
+    }
+
+    onMouseUp(e) {
+        console.log("mouseDown");
+        this.mouseIsDown = false;
+    }
+
+    /*
+    findNearestTrailPoint(pt) {
+        for (var jointIdx in this.trails) {
+            var pts = this.trails[jointIdx];
+            var ret = findNearestPoint(pts, pt);
+            console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
+            if (ret.d < 10) {
+                var n = this.trailsLow[jointIdx] + ret.iMin;
+                this.player.seekIdx(n);
+            }
+        }
+    }
+    */
+    
     clearBackground(img)
     {
-        console.log("clearBackground "+img);
+        //console.log("clearBackground "+img);
         var ctx = this.ctx;
         ctx.fillStyle = "white";
         ctx.fillStyle = "pink";
         ctx.fillRect(0, 0, 1000, 1000);
         if (img) {
-/*
-            if (canvWd != img.width) {
-                console.log("width: "+img.naturalWidth+"  height: "+img.naturalHeight);
-                //canvWd = img.width;
-                //canvHt = img.height;
-                canvWd = img.naturalWidth;
-                canvHt = img.naturalHeight;
-            }
-            //ctx.drawImage(img, 0, 0, 900, 700);
-*/
             ctx.drawImage(img, 0, 0, this.width, this.height);
         }
     }
@@ -56,6 +151,7 @@ class BodyDrawer
             console.log("*** drawBodies no bodyFrame");
             return;
         }
+        this.player = player;
         var showTrails = $("#showTrails").is(':checked');
         var index = 0;
         var inst = this;
@@ -75,15 +171,21 @@ class BodyDrawer
     }
 
     drawBody(body, index) {
-        var ctx = this.ctx;
-	for(var jointType in body.joints) {
-	    var joint = body.joints[jointType];
-	    ctx.fillStyle = colors[index];
-            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
-	}
 	//draw hand states
         this.updateHandState(body.leftHandState, body.joints[7]);
 	this.updateHandState(body.rightHandState, body.joints[11]);
+        var ctx = this.ctx;
+        var color = colors[index];
+	for(var jointType in body.joints) {
+            if (this.visibleJoints && !this.visibleJoints[jointType])
+                continue;
+	    var joint = body.joints[jointType];
+	    ctx.fillStyle = color;
+            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
+	}
+	//draw hand states
+        //this.updateHandState(body.leftHandState, body.joints[7]);
+	//this.updateHandState(body.rightHandState, body.joints[11]);
     }
 
     drawHand(jointPoint, handColor) {
@@ -144,8 +246,10 @@ class BodyDrawer
     }
     
     drawTrail(frames, bodyIdx, jointId, color, low, high) {
-        console.log("drawTrail "+bodyIdx+" "+jointId);
+        //console.log("drawTrail "+bodyIdx+" "+jointId);
         var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
+        this.trails[jointId] = pts;
+        this.trailsLow[jointId] = low;
         this.drawPolyline(pts, color);
     }
 }

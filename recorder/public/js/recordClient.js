@@ -114,7 +114,6 @@ colorWorkerThread.addEventListener("message", function (event) {
         var img = imagedata_to_image(event.data.imageData)
         colorProcessing = false;
         img.addEventListener('load', () => {
-            console.log("after load image w h "+img.width+" "+img.height);
             bodyDrawer.clearBackground(img);
     	    bodyDrawer.draw(lastBodyFrame);
         });
