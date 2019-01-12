@@ -107,6 +107,7 @@ class BodyDrawer
         console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
         var n = this.trailsLow[jointIdx] + ret.iMin;
         this.player.seekIdx(n);
+        return ret;
     }
 
     onMouseMove(e) {
@@ -115,6 +116,7 @@ class BodyDrawer
         if (!this.mouseIsDown)
             return;
         this.mousePoint = pt;
+        this.controlPoint = pt;
         //console.log("mouseDrag "+pt);
         if (this.draggedJoint >= 0)
             this.dragJoint(this.draggedJoint, pt);
@@ -124,6 +126,7 @@ class BodyDrawer
         console.log("mouseUp");
         this.mouseIsDown = false;
         this.mousePoint = null;
+        this.controlPoint = null;
     }
 
     clearBackground(img)
@@ -238,14 +241,14 @@ class BodyDrawer
     }
 
     drawDrag() {
-        if (!this.mousePoint || !this.nearestPoint)
+        if (!this.controlPoint || !this.nearestPoint)
             return;
         var ctx = this.ctx;
         ctx.lineWidth = 3.5;
         ctx.strokeStyle = 'pink';
         ctx.beginPath();
         ctx.moveTo(this.nearestPoint[0], this.nearestPoint[1]);
-        ctx.lineTo(this.mousePoint[0], this.mousePoint[1]);
+        ctx.lineTo(this.controlPoint[0], this.controlPoint[1]);
         ctx.stroke();
     }
     
@@ -258,12 +261,25 @@ class BodyDrawer
         this.drawDrag();
     }
 
-    drawLive(frame) {
-        //console.log("drawLive");
+    handleLive(frame) {
+        //console.log("handleLive");
         for (var bodyIndex=0; bodyIndex<frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];
-	    if(body.tracked) {
-                this.drawBody(body, bodyIndex);
+            if (!body.tracked)
+                continue;
+            this.drawBody(body, bodyIndex);
+            var joint = body.joints[RHAND];
+            var pt = [joint.colorX * this.width, joint.colorY * this.height];
+            if (this.draggedJoint < 0)
+                this.findDraggedJoint(pt);
+            if (this.draggedJoint >= 0) {
+                this.controlPoint = pt;
+                var ret = this.dragJoint(this.draggedJoint, pt);
+                if (ret.d > 200) {
+                    console.log("break dragging");
+                    this.draggedJoint = -1;
+                    this.controlPoint = null;
+                }
             }
         }
     }

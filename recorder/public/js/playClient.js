@@ -42,9 +42,12 @@ class Player {
             }
             if (this.runTracker) {
                 this.kinClient.poseWatcher = () => {
-                    console.log("new pose");
+                    //console.log("new pose");
                     inst.redraw();
                 };
+            }
+            else {
+                this.kinClient.poseWatcher = null;
             }
         });
         $("#img1").on('load', () => {
@@ -60,7 +63,7 @@ class Player {
         this.bodyDrawer.clearBackground(img);
         this.bodyDrawer.draw(this.lastBodyFrame, player);
         if (this.runTracker && this.kinClient) {
-            this.bodyDrawer.drawLive(this.kinClient.lastBodyFrame);
+            this.bodyDrawer.handleLive(this.kinClient.lastBodyFrame);
         }
     }
 
