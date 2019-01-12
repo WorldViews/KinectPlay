@@ -54,21 +54,18 @@ function findNearestPoint(pts, pt)
 
 class BodyDrawer
 {
-    constructor() {
+    constructor(player) {
         var inst = this;
-        this.player = null;
+        this.player = player;
         this.canvas = document.getElementById('bodyCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
-        this.visibleJoints = {};
         this.trails = {};
         this.trailsLow = {};
         this.mousePoint = null;
-        var vj = this.visibleJoints;
-        vj[RHAND] = true;
-        vj[LHAND] = true;
-        //this.visibleJoints = {7: true, 11: true, 4:true, 5:true};
+        this.visibleJoints = null;
+        //this.visibleJoints = [RHAND, LHAND];
         console.log("Visible Joints: "+JSON.stringify(this.visibleJoints));
         this.mouseIsDown = false;
         $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
@@ -76,6 +73,11 @@ class BodyDrawer
         $("#bodyCanvas").mouseup(e => inst.onMouseUp(e));
     }
 
+    setVisibleJoints(joints)
+    {
+        this.visibleJoints = joints;
+    }
+    
     onMouseDown(e) {
         console.log("mouseDown");
         var pt = getMousePos(this.canvas, e);
@@ -89,7 +91,7 @@ class BodyDrawer
         for (var jointIdx in this.trails) {
             var pts = this.trails[jointIdx];
             var ret = findNearestPoint(pts, pt);
-            console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
+            //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
             if (ret.d < 10) {
                 this.draggedJoint = jointIdx;
                 var n = this.trailsLow[jointIdx] + ret.iMin;
@@ -113,7 +115,7 @@ class BodyDrawer
         if (!this.mouseIsDown)
             return;
         this.mousePoint = pt;
-        console.log("mouseDrag "+pt);
+        //console.log("mouseDrag "+pt);
         if (this.draggedJoint >= 0)
             this.dragJoint(this.draggedJoint, pt);
     }
@@ -136,27 +138,23 @@ class BodyDrawer
         }
     }
 
-    draw(bodyFrame, player)
+    draw(bodyFrame)
     {
         if (!bodyFrame) {
             console.log("*** drawBodies no bodyFrame");
             return;
         }
-        this.player = player;
         var showTrails = $("#showTrails").is(':checked');
-        var bodyIndex = 0;
-        var inst = this;
-        for (bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
+        for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
-                inst.drawBody(body, bodyIndex);
-                if (showTrails) {
-                    //inst.drawTrail(player.bodyFrames, index, RHAND, 0, frames.length);
+                this.drawBody(body, bodyIndex);
+                if (showTrails && this.player) {
                     for (var i=0; i<TRAIL_JOINTS.length; i++) {
                         var joint = TRAIL_JOINTS[i];
                         var color = colors[i];
-                        inst.drawTrail(player.bodyFrames, bodyIndex,
-                                       joint, color, player.frameNum-30, player.frameNum+30);
+                        this.drawTrail(this.player.bodyFrames, bodyIndex,
+                                       joint, color, this.player.frameNum-30, this.player.frameNum+30);
                     }
                 }
             }
@@ -165,6 +163,7 @@ class BodyDrawer
 
     drawBody(body, index) {
 	//draw hand states
+        //console.log("drawBody "+index);
         this.updateHandState(body.leftHandState, body.joints[7]);
 	this.updateHandState(body.rightHandState, body.joints[11]);
         var ctx = this.ctx;
@@ -257,6 +256,16 @@ class BodyDrawer
         this.trailsLow[jointId] = low;
         this.drawPolyline(pts, color);
         this.drawDrag();
+    }
+
+    drawLive(frame) {
+        //console.log("drawLive");
+        for (var bodyIndex=0; bodyIndex<frame.bodies.length; bodyIndex++) {
+            var body = frame.bodies[bodyIndex];
+	    if(body.tracked) {
+                this.drawBody(body, bodyIndex);
+            }
+        }
     }
 }
 

@@ -56,7 +56,7 @@ function resetStats()
 }
 
 function handleStats(stats){
-    console.log("handleStats");
+    //console.log("handleStats");
     if (bfn0 < 0)
         initStats(stats);
     var dt = getClockTime() - t0;

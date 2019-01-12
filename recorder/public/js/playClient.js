@@ -1,23 +1,7 @@
 
-getParameterByName = function(name, defaultVal) {
-    if (typeof window === 'undefined') {
-        console.log("***** getParameterByName called outside of browser...");
-        return defaultVal;
-    }
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-    val = match && decodeURIComponent(match[1].replace(/\+/g, ' '));
-    if (!val)
-        return defaultVal;
-    return val;
-}
-
-function getClockTime()
-{
-    return new Date().getTime()/1000.0;
-}
-
 var defaultRecId = "2018_12_31__23_22_40";
 var player = null;
+var kinClient = null;
 
 function loadSessions()
 {
@@ -42,14 +26,42 @@ class Player {
     constructor(recId) {
         this.setSession(recId);
         var inst = this;
-        this.bodyDrawer = new BodyDrawer();
-        $("#img1").on('load', () => {
-            //console.log("Image1 loaded ");
-            var img = document.getElementById("img1");
-            inst.bodyDrawer.clearBackground(img);
-            inst.bodyDrawer.draw(this.lastBodyFrame, player);
+        this.bodyDrawer = new BodyDrawer(this);
+        var vj = {};
+        vj[RHAND] = true;
+        vj[LHAND] = true;
+        this.bodyDrawer.setVisibleJoints(vj);
+        this.kinClient = null;
+        this.runTracker = false;
+        $("#runTracker").click(() => {
+            this.runTracker = $("#runTracker").is(':checked');
+            console.log("runTracker click "+this.runTracker);
+            if (!this.kinClient) {
+                console.log("Getting KinClient");
+                this.kinClient = new KinClient();
+            }
+            if (this.runTracker) {
+                this.kinClient.poseWatcher = () => {
+                    console.log("new pose");
+                    inst.redraw();
+                };
+            }
         });
+        $("#img1").on('load', () => {
+            //console.log("image loaded");
+            inst.redraw();
+        })
         setInterval(() => {inst.tick()}, 50);
+    }
+
+    redraw() {
+        //console.log("Image1 loaded ");
+        var img = document.getElementById("img1");
+        this.bodyDrawer.clearBackground(img);
+        this.bodyDrawer.draw(this.lastBodyFrame, player);
+        if (this.runTracker && this.kinClient) {
+            this.bodyDrawer.drawLive(this.kinClient.lastBodyFrame);
+        }
     }
 
     setSession(recId) {
