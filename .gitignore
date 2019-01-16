@@ -4,6 +4,7 @@ Thumbs.db
 *~
 KinRec/.vs
 KinRec/KinRec/x64
+KinRec/x64
 *.vcxproj.user
 recorder/recordings/*
 build/
