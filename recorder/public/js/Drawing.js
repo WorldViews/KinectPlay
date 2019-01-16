@@ -104,8 +104,12 @@ class BodyDrawer
         var pts = this.trails[jointIdx];
         var ret = findNearestPoint(pts, pt);
         this.nearestPoint = ret.pt;
-        console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
-        var n = this.trailsLow[jointIdx] + ret.iMin;
+        //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
+        var low = this.trailsLow[jointIdx]
+        if (low < 0)
+            low = 0;
+        var n = low + ret.iMin;
+        //console.log("low "+low+" iMin "+ret.iMin+"  n: "+n);
         this.player.seekIdx(n);
         return ret;
     }
