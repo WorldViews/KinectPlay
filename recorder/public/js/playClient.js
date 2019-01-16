@@ -3,6 +3,32 @@ var defaultRecId = "2018_12_31__23_22_40";
 var player = null;
 var kinClient = null;
 
+function getJSON(url, handler, errFun)
+{
+    console.log("getJSON: "+url);
+    $.ajax({
+        url: url,
+        dataType: 'text',
+        success: function(str) {
+            var data;
+            try {
+                data = JSON.parse(str);
+            }
+            catch (err) {
+                console.log("err: "+err);
+                alert("Error in json for: "+url+"\n"+err);
+                errFun();
+                return;
+            }
+            handler(data);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("Failed to get JSON for "+url);
+            errFun();
+        }
+    });
+}
+
 function loadSessions()
 {
     var sessionsURL = "/sessions";
@@ -72,6 +98,7 @@ class Player {
         $("#sessionName").html(recId+"...");
         this.recordingId = recId;
         this.frameType = "bmp";
+        this.frameType = "jpg";
         this.frameNum = 0;
         this.numFrames = 0;
         this.prevFrameNum = 0;
@@ -116,7 +143,7 @@ class Player {
         this.loadIndex_();
     }
     
-    loadIndex_() {
+    loadIndex_OLD() {
         this.frameNum++;
         var url = "/recs/"+this.recordingId+"/bodyFrame"+
             this.frameNum+".json";
@@ -137,6 +164,30 @@ class Player {
             $("#sessionName").html(this.recordingId);
             inst.onSessionReady();
         });
+    }
+
+    loadIndex_() {
+        this.frameNum++;
+        var url = "/recs/"+this.recordingId+"/bodyFrame"+
+            this.frameNum+".json";
+        $("#stats").html("loading: "+url);
+        var inst = this;
+        getJSON(url,
+               (data) => {
+                   //console.log("status: "+this.frameNum+" "+status);
+                   this.numFrames = this.frameNum;
+                   this.bodyFrames[this.frameNum] = data;
+                   inst.loadIndex_();
+               },
+                () => {
+                    console.log("failed ... finished loading index");
+                    this.loading = false;
+                    this.seekIdx(1);
+                    this.play();
+                    $("#sessionName").html(this.recordingId);
+                    inst.onSessionReady();
+                }
+               );
     }
 
     onSessionReady() {

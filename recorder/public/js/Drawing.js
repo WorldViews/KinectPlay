@@ -228,11 +228,16 @@ class BodyDrawer
 
     computeTrail(frames, bodyIdx, jointId, startNum, endNum)
     {
+        //console.log("computeTrail "+bodyIdx+" "+jointId+" "+startNum+" "+endNum);
         var pts = [];
         for (var i=startNum; i<endNum; i++) {
             if (i < 1 || i > frames.length)
                 continue;
             var frame = frames[i];
+            if (!frame) {
+                console.log("No frame for i: "+i);
+                continue;
+            }
             var body = frame.bodies[bodyIdx];
             var joint = body.joints[jointId];
             pts.push([joint.colorX*this.width, joint.colorY*this.height]);
