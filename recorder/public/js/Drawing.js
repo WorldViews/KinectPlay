@@ -110,6 +110,7 @@ class BodyDrawer
             low = 0;
         var n = low + ret.iMin;
         //console.log("low "+low+" iMin "+ret.iMin+"  n: "+n);
+        this.player.redraw();
         this.player.seekIdx(n);
         return ret;
     }

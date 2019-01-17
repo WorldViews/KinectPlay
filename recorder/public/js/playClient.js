@@ -52,6 +52,7 @@ class Player {
     constructor(recId) {
         this.setSession(recId);
         var inst = this;
+        this.currentImage = null;
         this.bodyDrawer = new BodyDrawer(this);
         var vj = {};
         vj[RHAND] = true;
@@ -68,29 +69,30 @@ class Player {
             }
             if (this.runTracker) {
                 this.kinClient.poseWatcher = () => {
-                    //console.log("new pose");
-                    inst.redraw();
+                    //inst.redraw();
+                    inst.handlePose();
                 };
             }
             else {
                 this.kinClient.poseWatcher = null;
             }
         });
-        $("#img1").on('load', () => {
-            //console.log("image loaded");
-            inst.redraw();
-        })
         setInterval(() => {inst.tick()}, 50);
     }
 
-    redraw() {
-        //console.log("Image1 loaded ");
-        var img = document.getElementById("img1");
-        this.bodyDrawer.clearBackground(img);
-        this.bodyDrawer.draw(this.lastBodyFrame, player);
+    handlePose() {
+        //console.log("new pose");
         if (this.runTracker && this.kinClient) {
             this.bodyDrawer.handleLive(this.kinClient.lastBodyFrame);
         }
+    }
+
+    redraw() {
+        this.bodyDrawer.clearBackground(this.currentImage);
+        this.bodyDrawer.draw(this.lastBodyFrame, player);
+        //if (this.runTracker && this.kinClient) {
+        //    this.bodyDrawer.handleLive(this.kinClient.lastBodyFrame);
+        //}
     }
 
     setSession(recId) {
@@ -143,29 +145,6 @@ class Player {
         this.loadIndex_();
     }
     
-    loadIndex_OLD() {
-        this.frameNum++;
-        var url = "/recs/"+this.recordingId+"/bodyFrame"+
-            this.frameNum+".json";
-        $("#stats").html("loading: "+url);
-        var inst = this;
-        var gp = $.getJSON(url, (data, status, jqXHR) => {
-            //console.log("sucess...");
-        }).done((data, status) => {
-            //console.log("status: "+this.frameNum+" "+status);
-            this.numFrames = this.frameNum;
-            this.bodyFrames[this.frameNum] = data;
-            inst.loadIndex_();
-        }).fail(() => {
-            console.log("failed ... finished loading index");
-            this.loading = false;
-            this.seekIdx(1);
-            this.play();
-            $("#sessionName").html(this.recordingId);
-            inst.onSessionReady();
-        });
-    }
-
     loadIndex_() {
         this.frameNum++;
         var url = "/recs/"+this.recordingId+"/bodyFrame"+
@@ -217,7 +196,13 @@ class Player {
             var url = "/recs/"+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
             $("#stats").html("url: "+url);
-            $("#img1").attr('src', url);
+            this.newImage = new Image();
+            this.newImage.src = url;
+            this.newImage.addEventListener('load', () => {
+                console.log("newImage loaded");
+                this.currentImage = this.newImage;
+                this.redraw();
+            });
             this.prevFrameNum = this.frameNum;
         }
         var frame = this.bodyFrames[this.frameNum];
