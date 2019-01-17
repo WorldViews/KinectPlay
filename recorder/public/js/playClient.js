@@ -1,5 +1,5 @@
 
-var defaultRecId = "2018_12_31__23_22_40";
+var defaultRecId = "2019_01_17__15_17_07";
 var player = null;
 var kinClient = null;
 
@@ -90,16 +90,13 @@ class Player {
     redraw() {
         this.bodyDrawer.clearBackground(this.currentImage);
         this.bodyDrawer.draw(this.lastBodyFrame, player);
-        //if (this.runTracker && this.kinClient) {
-        //    this.bodyDrawer.handleLive(this.kinClient.lastBodyFrame);
-        //}
     }
 
     setSession(recId) {
         console.log("setSession "+recId);
         $("#sessionName").html(recId+"...");
         this.recordingId = recId;
-        this.frameType = "bmp";
+        //this.frameType = "bmp";
         this.frameType = "jpg";
         this.frameNum = 0;
         this.numFrames = 0;
@@ -140,6 +137,36 @@ class Player {
     }
 
     loadIndex() {
+        this.loading = true;
+        this.bodyFrames = [];
+        var url = "/recs/"+this.recordingId+"/rec.json";
+        $("#stats").html("loading: "+url);
+        var inst = this;
+        getJSON(url,
+               (data) => {
+                   inst.handleIndex(data);
+               },
+                () => {
+                    alert("Failed to load index "+url);
+                }
+               );
+    }
+
+    handleIndex(data)
+    {
+        this.numFrames = data.numFrames;
+        this.duration = data.duration;
+        data.frames.forEach(frame => {
+            this.bodyFrames[frame.frameNum] = frame;
+        })
+        this.loading = false;
+        this.seekIdx(1);
+        this.play();
+        this.data = data;
+        this.onSessionReady();
+    }
+
+    loadIndexOLD() {
         this.loading = true;
         this.frameNum = 0;
         this.loadIndex_();
