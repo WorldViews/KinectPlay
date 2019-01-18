@@ -146,10 +146,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="KinRecorder.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="TrailRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="KinRecorder.h" />
     <ClInclude Include="NtKinect.h" />
+    <ClInclude Include="TrailRecorder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
