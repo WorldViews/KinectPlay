@@ -273,6 +273,7 @@ class BodyDrawer
 
     handleLive(frame) {
         //console.log("handleLive");
+        this.player.redraw();
         for (var bodyIndex=0; bodyIndex<frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];
             if (!body.tracked)

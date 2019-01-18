@@ -163,7 +163,6 @@ class Player {
         this.seekIdx(1);
         this.play();
         this.data = data;
-        this.onSessionReady();
     }
 
     loadIndexOLD() {
@@ -191,16 +190,10 @@ class Player {
                     this.seekIdx(1);
                     this.play();
                     $("#sessionName").html(this.recordingId);
-                    inst.onSessionReady();
                 }
                );
     }
 
-    onSessionReady() {
-        var RHAND = 11;
-//        bodyDrawer.drawTrail(this.bodyFrames, 0, RHAND);
-    }
-    
     play() {
         this.playing = true;
     }
@@ -235,7 +228,6 @@ class Player {
         var frame = this.bodyFrames[this.frameNum];
         if (frame) {
             this.lastBodyFrame = frame;
-            //drawBodies(frame);
         }
         this.showTime();
     }
