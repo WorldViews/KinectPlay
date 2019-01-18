@@ -54,6 +54,45 @@ void TrailRecorder::update() {
 	fs << "}";
 }
 
+void TrailRecorder::update(intVec& joints) {
+	NtKinect& kinect = *pKinRec->pKinect;
+	FileStorage& fs = *recFS;
+	fs << "{";
+	fs << "frameNum" << pKinRec->frameNum;
+	fs << "bodies" << "[";
+	int pnum = 0;
+	for (auto person : kinect.skeleton) {
+		pnum++;
+		fs << "{";
+		fs << "bodyIndex" << pnum;
+		fs << "tracked" << true;
+		fs << "leftHandState" << 0;
+		fs << "rightHandState" << 0;
+		fs << "joints" << "[";
+		for (int j = 0; j < joints.size(); j++) {
+			int jointId = joints[j];
+			Joint joint = person[jointId];
+			if (joint.TrackingState == TrackingState_NotTracked) continue;
+			ColorSpacePoint cp;
+			kinect.coordinateMapper->MapCameraPointToColorSpace(joint.Position, &cp);
+			//cv::rectangle(kinect.rgbImage, cv::Rect((int)cp.X - 5, (int)cp.Y - 5, 10, 10), cv::Scalar(0, 0, 255), 2);
+			fs << "{";
+			fs << "jointType" << joint.JointType;
+			fs << "trackingState" << joint.TrackingState;
+			fs << "cameraX" << joint.Position.X;
+			fs << "cameraY" << joint.Position.Y;
+			fs << "cameraZ" << joint.Position.Z;
+			fs << "colorX" << tweak(cp.X) / 1920.0;
+			fs << "colorY" << tweak(cp.Y) / 1080.0;
+			fs << "}";
+		}
+		fs << "]";
+		fs << "}";
+	}
+	fs << "]";
+	fs << "}";
+}
+
 TrailRecorder::~TrailRecorder() {
 	if (recFS == NULL) {
 		return;

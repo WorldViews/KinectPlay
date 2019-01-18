@@ -4,6 +4,8 @@
 using namespace std;
 using namespace cv;
 
+typedef vector<int> intVec;
+
 class KinRecorder;
 
 class TrailRecorder
@@ -15,4 +17,5 @@ public:
 	TrailRecorder(string recJSONPath, KinRecorder* pKinRec);
 	virtual ~TrailRecorder();
 	void update();
+	void update(intVec& joints);
 };

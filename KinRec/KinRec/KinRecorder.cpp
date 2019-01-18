@@ -134,6 +134,9 @@ void KinRecorder::run_()
 	cv::namedWindow("rgb", 0);
 	frameNum = 0;
 	recId = getRecId();
+	intVec trackedJoints;
+	trackedJoints.push_back(JointType_HandLeft);
+	trackedJoints.push_back(JointType_HandRight);
 	while (1) {
 		frameNum++;
 		kinect.setRGB();
@@ -141,8 +144,9 @@ void KinRecorder::run_()
 		std::string imagePath = recDir + "/" + format("image%d.jpg", frameNum);
 		//std::string imagePath = recDir + "/" + format("image%d.bmp", frameNum);
 		if (recording) {
-			saveBodyFrameJSON(frameNum, kinect);
-			trailRec->update();
+			//saveBodyFrameJSON(frameNum, kinect);
+			//trailRec->update();
+			trailRec->update(trackedJoints);
 			cv::imwrite(imagePath, kinect.rgbImage);
 		}
 		draw();
@@ -192,13 +196,6 @@ void KinRecorder::saveBodyFrameJSON(int frameNum, NtKinect& kinect) {
 	FileStorage fs(jsonPath, FileStorage::WRITE);
 	fs << "frameNum" << frameNum;
 	fs << "frameTime" << getClockTime();
-	//time_t rawtime; time(&rawtime);
-	//fs << "calibrationDate" << asctime(localtime(&rawtime));
-	/*
-	Mat cameraMatrix = (Mat_<double>(3, 3) << 1000, 0, 320, 0, 1000, 240, 0, 0, 1);
-	Mat distCoeffs = (Mat_<double>(5, 1) << 0.1, 0.01, -0.001, 0, 0);
-	fs << "cameraMatrix" << cameraMatrix << "distCoeffs" << distCoeffs;
-	*/
 	fs << "bodies" << "[";
 	int pnum = 0;
 	for (auto person : kinect.skeleton) {
