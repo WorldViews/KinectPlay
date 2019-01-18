@@ -89,6 +89,7 @@ void KinRecorder::startRecording()
 		return;
 	}
 	startTime = getClockTime();
+	prevFrameTime = startTime;
 	recId = getRecId();
 	recDir = kinDir + "\\" + recId;
 	verifyDir(kinDir);
@@ -137,10 +138,16 @@ void KinRecorder::run_()
 	intVec trackedJoints;
 	trackedJoints.push_back(JointType_HandLeft);
 	trackedJoints.push_back(JointType_HandRight);
+	double deltaT = 0;
+	double maxDeltaT = 0;
 	while (1) {
 		frameNum++;
 		kinect.setRGB();
 		kinect.setSkeleton();
+		frameTime = getClockTime();
+		deltaT = frameTime - prevFrameTime;
+		maxDeltaT = max(deltaT, maxDeltaT);
+		prevFrameTime = frameTime;
 		std::string imagePath = recDir + "/" + format("image%d.jpg", frameNum);
 		//std::string imagePath = recDir + "/" + format("image%d.bmp", frameNum);
 		if (recording) {
@@ -169,9 +176,12 @@ void KinRecorder::run_()
 		}
 		if (key == 'r') {
 			startRecording();
+			deltaT = 0;
+			maxDeltaT = 0;
 		}
 		if (key == 's') {
 			stopRecording();
+			cout << "maxDeltaT " << maxDeltaT << "\n";
 		}
 	}
 	cv::destroyAllWindows();

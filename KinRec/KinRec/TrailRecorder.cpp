@@ -22,6 +22,7 @@ void TrailRecorder::update() {
 	FileStorage& fs = *recFS;
 	fs << "{";
 	fs << "frameNum" << pKinRec->frameNum;
+	fs << "frameTime" << pKinRec->frameTime;
 	fs << "bodies" << "[";
 	int pnum = 0;
 	for (auto person : kinect.skeleton) {
@@ -59,6 +60,7 @@ void TrailRecorder::update(intVec& joints) {
 	FileStorage& fs = *recFS;
 	fs << "{";
 	fs << "frameNum" << pKinRec->frameNum;
+	fs << "frameTime" << pKinRec->frameTime - pKinRec->startTime;
 	fs << "bodies" << "[";
 	int pnum = 0;
 	for (auto person : kinect.skeleton) {

@@ -18,6 +18,8 @@ public:
 	bool recording = false;
 	string kinDir = "C:\\GitHub\\WorldViews\\KinectPlay\\recorder\\recordings";
 	double startTime = 0;
+	double frameTime = 0;
+	double prevFrameTime = 0;
 	string recId = "";
 	string recDir = "";
 	int frameNum = 0;
