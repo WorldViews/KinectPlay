@@ -183,9 +183,16 @@ class BodyDrawer
 	    ctx.fillStyle = color;
             ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
 	}
-	//draw hand states
-        //this.updateHandState(body.leftHandState, body.joints[7]);
-	//this.updateHandState(body.rightHandState, body.joints[11]);
+        /*
+	for(var j in body.joints) {
+	    var joint = body.joints[j];
+            var jointType = joint.jointType;
+            if (this.visibleJoints && !this.visibleJoints[jointType])
+                continue;
+	    ctx.fillStyle = color;
+            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
+	}
+        */
     }
 
     drawHand(jointPoint, handColor) {

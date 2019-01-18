@@ -1,7 +1,26 @@
 
 var defaultRecId = "2019_01_17__15_17_07";
+defaultRecId = null;
 var player = null;
 var kinClient = null;
+
+/*
+in the saved JSON file there are lists of joints.  It is saved
+as vector of joint objects, but the index into the vector is not
+the jointType.  This replaces those vectors with sparse vectors
+where the index of each joint object is the jointType.
+*/
+function fixFrame(frame)
+{
+    frame.bodies.forEach(body => {
+        jvec = [];
+        body.joints.forEach(joint => {
+            jvec[joint.jointType] = joint;
+        });
+        body.joints = jvec;
+    });
+    return frame;
+}
 
 function getJSON(url, handler, errFun)
 {
@@ -96,8 +115,10 @@ class Player {
 
     setSession(recId) {
         console.log("setSession "+recId);
-        $("#sessionName").html(recId+"...");
         this.recordingId = recId;
+        if (recId == null)
+            return;
+        $("#sessionName").html(recId+"...");
         //this.frameType = "bmp";
         this.frameType = "jpg";
         this.frameNum = 0;
@@ -159,6 +180,7 @@ class Player {
         this.numFrames = data.numFrames;
         this.duration = data.duration;
         data.frames.forEach(frame => {
+            frame = fixFrame(frame);
             this.bodyFrames[frame.frameNum] = frame;
         })
         this.loading = false;
@@ -207,6 +229,8 @@ class Player {
     tick() {
         //console.log("tick...");
         if (this.loading)
+            return;
+        if (this.recordingId == null)
             return;
         if (this.frameNum >= this.numFrames) {
             this.playing = false;
