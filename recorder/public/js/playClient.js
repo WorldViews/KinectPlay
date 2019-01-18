@@ -54,6 +54,8 @@ class Player {
         var inst = this;
         this.currentImage = null;
         this.bodyDrawer = new BodyDrawer(this);
+        this.pendingLoad = null;
+        this.loadCollisions = 0; // times a new image is requested before old one loaded.
         var vj = {};
         vj[RHAND] = true;
         vj[LHAND] = true;
@@ -216,13 +218,21 @@ class Player {
             var url = "/recs/"+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
             $("#stats").html("url: "+url);
-            this.newImage = new Image();
-            this.newImage.src = url;
-            this.newImage.addEventListener('load', () => {
-                console.log("newImage loaded");
-                this.currentImage = this.newImage;
-                this.redraw();
-            });
+            if (this.pendingLoad) {
+                console.log("load collision");
+                this.loadCollisions++;
+            }
+            else {
+                this.newImage = new Image();
+                this.pendingLoad = true;
+                this.newImage.src = url;
+                this.newImage.addEventListener('load', () => {
+                    //console.log("newImage loaded");
+                    this.currentImage = this.newImage;
+                    this.pendingLoad = false;
+                    this.redraw();
+                });
+            }
             this.prevFrameNum = this.frameNum;
         }
         var frame = this.bodyFrames[this.frameNum];
