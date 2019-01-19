@@ -26,12 +26,14 @@ void TrailRecorder::update() {
 	fs << "bodies" << "[";
 	int pnum = 0;
 	for (auto person : kinect.skeleton) {
-		pnum++;
+		unsigned int personId = kinect.skeletonTrackingId[pnum];
 		fs << "{";
 		fs << "bodyIndex" << pnum;
+		fs << "trackingId" << format("%u", personId);
 		fs << "tracked" << true;
 		fs << "leftHandState" << 0;
 		fs << "rightHandState" << 0;
+		pnum++;
 		fs << "joints" << "[";
 		for (auto joint : person) {
 			if (joint.TrackingState == TrackingState_NotTracked) continue;
@@ -64,12 +66,14 @@ void TrailRecorder::update(intVec& joints) {
 	fs << "bodies" << "[";
 	int pnum = 0;
 	for (auto person : kinect.skeleton) {
-		pnum++;
+		unsigned int personId = kinect.skeletonTrackingId[pnum];
 		fs << "{";
 		fs << "bodyIndex" << pnum;
+		fs << "trackingId" << format("%u", personId);
 		fs << "tracked" << true;
 		fs << "leftHandState" << 0;
 		fs << "rightHandState" << 0;
+		pnum++;
 		fs << "joints" << "[";
 		for (int j = 0; j < joints.size(); j++) {
 			int jointId = joints[j];

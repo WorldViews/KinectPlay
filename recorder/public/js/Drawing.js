@@ -63,6 +63,7 @@ class BodyDrawer
         this.height = this.canvas.height;
         this.trails = {};
         this.trailsLow = {};
+        this.trailsBodyIdx = {};
         this.mousePoint = null;
         this.visibleJoints = null;
         //this.visibleJoints = [RHAND, LHAND];
@@ -156,7 +157,7 @@ class BodyDrawer
         for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
-                this.drawBody(body, bodyIndex);
+                //this.drawBody(body, bodyIndex);
                 if (showTrails && this.player) {
                     for (var i=0; i<TRAIL_JOINTS.length; i++) {
                         var joint = TRAIL_JOINTS[i];
@@ -165,6 +166,7 @@ class BodyDrawer
                                        joint, color, this.player.frameNum-30, this.player.frameNum+30);
                     }
                 }
+                this.drawBody(body, bodyIndex);
             }
         }
     }
@@ -176,12 +178,14 @@ class BodyDrawer
 	this.updateHandState(body.rightHandState, body.joints[11]);
         var ctx = this.ctx;
         var color = colors[index];
+        var s = 10
 	for(var jointType in body.joints) {
             if (this.visibleJoints && !this.visibleJoints[jointType])
                 continue;
 	    var joint = body.joints[jointType];
 	    ctx.fillStyle = color;
-            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
+            //ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
+            ctx.fillRect(joint.colorX * this.width - s/2.0, joint.colorY * this.height - s/2.0, s, s);
 	}
         /*
 	for(var j in body.joints) {
@@ -274,6 +278,7 @@ class BodyDrawer
         var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
         this.trails[jointId] = pts;
         this.trailsLow[jointId] = low;
+        this.trailsBodyIdx[jointId] = bodyIdx;
         this.drawPolyline(pts, color);
         this.drawDrag();
     }
