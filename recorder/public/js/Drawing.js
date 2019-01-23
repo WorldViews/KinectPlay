@@ -137,10 +137,10 @@ class BodyDrawer
     }
 
     resize() {
-        console.log("resize");
+        //console.log("resize");
         this.width = window.innerWidth;
         this.height = this.width / this.aspectRatio;
-        console.log("w: "+this.width);
+        //console.log("w: "+this.width);
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 //        this.canvas.height = window.innerHeight;

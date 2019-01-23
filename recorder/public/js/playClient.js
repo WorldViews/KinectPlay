@@ -120,7 +120,6 @@ class Player {
         if (recId == null)
             return;
         $("#sessionName").html(recId+"...");
-        $("#sessionName").html(recId+"...");
         $(document).attr('title', 'KVR '+recId);
         //this.frameType = "bmp";
         this.frameType = "jpg";
@@ -290,4 +289,8 @@ $(document).ready(()=> {
         player.seekIdx(i);
     });
     loadSessions();
+    $(window).resize(e => {
+        //console.log("window.resize");
+        player.redraw();
+    });
 })
