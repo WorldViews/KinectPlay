@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Player</title>
+  <script src="js/jquery-3.1.0.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h3>Leap</h3>
+  <input id="startRecordingButton" type="Button" value="Start Recording"> &nbsp;&nbsp;
+  <input id="stopRecordingButton" type="Button" value="Stop Recording"> &nbsp;&nbsp;
+  <p>
+  <a href="/sessions">Sessions JSON</a>
+  <br>
+
+  <script>
+    $("#startRecordingButton").click(() => {
+        console.log("start recording");
+        $.get("/startRecording", (data) => { console.log("ok"); });
+    });
+    $("#stopRecordingButton").click(() => {
+        console.log("stop recording");
+        $.get("/stopRecording", (data) => {
+            console.log("ok");
+            resetStats();
+        });
+    });
+
+  </script>
+</body>
+</html>
