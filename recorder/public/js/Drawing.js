@@ -61,6 +61,7 @@ class BodyDrawer
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+        this.aspectRatio = this.width / (this.height + 0.0);
         this.trails = {};
         this.trailsLow = {};
         this.trailsBodyIdx = {};
@@ -135,6 +136,16 @@ class BodyDrawer
         this.controlPoint = null;
     }
 
+    resize() {
+        console.log("resize");
+        this.width = window.innerWidth;
+        this.height = this.width / this.aspectRatio;
+        console.log("w: "+this.width);
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+//        this.canvas.height = window.innerHeight;
+    }
+    
     clearBackground(img)
     {
         //console.log("clearBackground "+img);

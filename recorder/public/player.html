@@ -4,14 +4,26 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<title>Player</title>
-	<link rel="stylesheet" href="">
+        <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 20px;
+      border: 10px;
+      xxoverflow: hidden; /*  Disable scrollbars */
+      xxdisplay: block;  /* No floating content on sides */
+    }
+    </style>
 </head>
 <body>
+<!--
   <p>
     <b>
       <span id="sessionName">xxx</span> &nbsp; <span id="time"></span>
     </b>
   <p>
+-->
+  <div id="controlsDiv">
   <b>Controls:</b>
   <input id="resetButton" type="Button" value="<<"> &nbsp;&nbsp;
   <input id="playButton" type="Button" value="Play"> &nbsp;&nbsp;
@@ -23,12 +35,12 @@
   <br>
   <input id="timeSlider" type="range" min="0" max="1000"
          style="width:90%;">
-  <br>
+  </div>
 <!--
-  <canvas id="bodyCanvas" width="1600" height="1200"></canvas>
+  <canvas id="bodyCanvas" width="960" height="540"></canvas>
   <canvas id="bodyCanvas" width="100%" height="80%"></canvas>
 -->
-  <canvas id="bodyCanvas" width="960" height="540"></canvas>
+  <canvas id="bodyCanvas" width="900" height="600"></canvas>
   <p>
     <div id="stats"></div>
   <img id="img1" width=64 height=48 style="display:none"></img>

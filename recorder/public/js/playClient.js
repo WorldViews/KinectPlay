@@ -109,6 +109,7 @@ class Player {
     }
 
     redraw() {
+        this.bodyDrawer.resize()
         this.bodyDrawer.clearBackground(this.currentImage);
         this.bodyDrawer.draw(this.lastBodyFrame, player);
     }
@@ -119,6 +120,8 @@ class Player {
         if (recId == null)
             return;
         $("#sessionName").html(recId+"...");
+        $("#sessionName").html(recId+"...");
+        $(document).attr('title', 'KVR '+recId);
         //this.frameType = "bmp";
         this.frameType = "jpg";
         this.frameNum = 0;
