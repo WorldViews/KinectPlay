@@ -52,6 +52,33 @@ function findNearestPoint(pts, pt)
     return ret;
 }
 
+function findBestPoint(pts, pt, low, cur, A)
+{
+    //console.log("findBestPoint "+low+" "+cur);
+    //return findNearestPoint(pts, pt);
+    var sMin = 1.0E100;
+    var dMin = 1.0E100;
+    var iMin = null;
+    
+    for (var i=0; i<pts.length; i++) {
+        var d = Math.sqrt(dist2(pts[i],pt));
+        var dn = cur - (i+low);
+        var dt = dn * 1.0/20;
+        //console.log("dt: "+dt);
+        var s = d + A*Math.abs(dt);
+        if (s < sMin) {
+            sMin = s;
+            iMin = i;
+            dMin = d;
+        }
+    }
+    var ret = {iMin, d: dMin, s: sMin};
+    if (iMin != null)
+        ret.pt = pts[iMin];
+    return ret;
+}
+
+
 class BodyDrawer
 {
     constructor(player) {
@@ -104,12 +131,13 @@ class BodyDrawer
 
     dragJoint(jointIdx, pt) {
         var pts = this.trails[jointIdx];
-        var ret = findNearestPoint(pts, pt);
-        this.nearestPoint = ret.pt;
-        //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
         var low = this.trailsLow[jointIdx]
         if (low < 0)
             low = 0;
+        var cur = player.frameNum;
+        var ret = findBestPoint(pts, pt, low, cur, player.WT);
+        this.nearestPoint = ret.pt;
+        //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
         var n = low + ret.iMin;
         //console.log("low "+low+" iMin "+ret.iMin+"  n: "+n);
         this.player.redraw();
@@ -165,16 +193,19 @@ class BodyDrawer
             return;
         }
         var showTrails = $("#showTrails").is(':checked');
+        var player = this.player;
         for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
                 //this.drawBody(body, bodyIndex);
-                if (showTrails && this.player) {
+                if (showTrails && player) {
                     for (var i=0; i<TRAIL_JOINTS.length; i++) {
                         var joint = TRAIL_JOINTS[i];
                         var color = colors[i];
-                        this.drawTrail(this.player.bodyFrames, bodyIndex,
-                                       joint, color, this.player.frameNum-30, this.player.frameNum+30);
+                        this.drawTrail(player.bodyFrames, bodyIndex,
+                                       joint, color,
+                                       player.frameNum-player.framesBehind,
+                                       player.frameNum+player.framesAhead);
                     }
                 }
                 this.drawBody(body, bodyIndex);

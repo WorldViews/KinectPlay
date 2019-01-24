@@ -70,6 +70,9 @@ function loadSessions()
 class Player {
     constructor(recId) {
         this.setSession(recId);
+        this.WT = 20;
+        this.framesBehind = 60;
+        this.framesAhead = 60;
         var inst = this;
         this.currentImage = null;
         this.bodyDrawer = new BodyDrawer(this);
