@@ -25,7 +25,8 @@ ws.on('message', data => {
     //console.log("data: "+JSON.stringify(data));
     if (recording) {
         var jsonPath = poseDir+"/"+handsFrameNum+".json";
-        saveJSON(jsonPath, data);
+        var obj = JSON.parse(data);
+        saveJSON(jsonPath, obj);
     }
 });
 
