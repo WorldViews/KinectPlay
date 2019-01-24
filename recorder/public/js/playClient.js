@@ -291,7 +291,7 @@ $(document).ready(()=> {
         var i = Math.round(rt*player.numFrames);
         player.seekIdx(i);
     });
-    loadSessions();
+    //loadSessions();
     $(window).resize(e => {
         //console.log("window.resize");
         player.redraw();

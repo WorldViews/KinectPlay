@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Recorded Sessions</title>
+</head>
+<body>
+  <script src="js/jquery-3.1.0.min.js"></script>
+  <script src="js/sprintf.js"></script>
+  <script src="js/showSessions.js"></script>
+  <br>
+  Recorded Sessions:
+  <div id="sessionList">
+  </div>
+  <input id="sessionsGo" type="Button" value="Go">
+  <script>
+    $("#sessionsGo").click(() => {
+    opener.player.setSession("DonOffice_1");
+    window.close();
+    });
+    $(document).ready(() => {
+        loadSessions(session => {
+           opener.player.setSession(session);
+           window.close();
+        });
+    });
+  </script>
+</body>
+</html>

@@ -29,6 +29,8 @@
   <input id="showTrails" type="Checkbox" checked=true> Trails
   &nbsp;&nbsp;&nbsp;
   <input id="runTracker" type="Checkbox" > Live Tracker
+  &nbsp;&nbsp;&nbsp;
+  <input id="showSessions" type="Button" value="Sessions">
   <br>
   <input id="timeSlider" type="range" min="0" max="1000"
          style="width:90%;">
@@ -45,8 +47,17 @@
   <script src="js/playClient.js"></script>
   <script src="js/Drawing.js"></script>
   <br>
+<!--
   Sessions:
   <div id="sessionList">
   </div>
+-->
+  <script>
+    var sessionsWindow = null;
+    function showSessions() {
+        sessionsWindow = window.open("recordings.html", "sessionsWindow");
+    }
+    $("#showSessions").click(() => showSessions());
+</script>
 </body>
 </html>
