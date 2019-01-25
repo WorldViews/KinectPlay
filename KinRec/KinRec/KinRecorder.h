@@ -25,6 +25,7 @@ public:
 	int frameNum = 0;
 	NtKinect* pKinect = NULL;
 	TrailRecorder* trailRec = NULL;
+	bool useDepth = false;
 	//	FileStorage* recFS = NULL;
 
 	KinRecorder();

@@ -76,6 +76,7 @@ KinRecorder::KinRecorder()
 	frameNum = 0;
 	//		recFS = NULL;
 	trailRec = NULL;
+	useDepth = false;
 }
 
 
@@ -143,12 +144,16 @@ void KinRecorder::run_()
 	while (1) {
 		frameNum++;
 		kinect.setRGB();
+		if (useDepth) {
+			kinect.setDepth(false);
+		}
 		kinect.setSkeleton();
 		frameTime = getClockTime();
 		deltaT = frameTime - prevFrameTime;
 		maxDeltaT = max(deltaT, maxDeltaT);
 		prevFrameTime = frameTime;
 		std::string imagePath = recDir + "/" + format("image%d.jpg", frameNum);
+		std::string depthPath = recDir + "/" + format("depth%d.jpg", frameNum);
 		//std::string imagePath = recDir + "/" + format("image%d.bmp", frameNum);
 		if (recording) {
 			//saveBodyFrameJSON(frameNum, kinect);
@@ -159,6 +164,8 @@ void KinRecorder::run_()
 		draw();
 		std::string stat = format("frame %d", frameNum);
 		stat += " " + recId;
+		if (useDepth)
+			stat += " D";
 		if (recording)
 			stat += " REC";
 		cv::putText(kinect.rgbImage, stat,
@@ -168,7 +175,18 @@ void KinRecorder::run_()
 			CV_RGB(255, 0, 0), //font color
 			2);
 		cv::imshow("rgb", kinect.rgbImage);
+		if (useDepth) {
+			//std::string imagePath = recDir + "/" + format("image%d.bmp", frameNum);
+			if (recording) {
+				std::string depthPath = recDir + "/" + format("depth%d.png", frameNum);
+				cv::imwrite(depthPath, kinect.depthImage);
+			}
+			cv::imshow("depth", kinect.depthImage);
+		}
 		auto key = cv::waitKey(1);
+		if (key == 'd') {
+			useDepth = !useDepth;
+		}
 		if (key == 'q') {
 			if (recording)
 				stopRecording();
