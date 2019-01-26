@@ -107,6 +107,7 @@ class BodyDrawer
         this.trails = {};
         this.trailsLow = {};
         this.trailsBodyIdx = {};
+        this.trailsJointId = {};
         this.mousePoint = null;
         this.visibleJoints = null;
         //this.visibleJoints = [RHAND, LHAND];
@@ -127,28 +128,39 @@ class BodyDrawer
         var pt = getMousePos(this.canvas, e);
         this.mouseIsDown = true;
         this.mousePoint = pt;
-        this.findDraggedJoint(pt);
+        this.findDraggedJoint(pt, -1);
     }
 
-    findDraggedJoint(pt) {
+    findDraggedJoint(pt, jointId) {
         this.draggedJoint = -1;
         this.draggedBody = -1;
-        for (var jointIdx in this.trails) {
-            var pts = this.trails[jointIdx];
+        this.draggedTrail = null;
+        //for (var jointIdx in this.trails) {
+        for (var trailId in this.trails) {
+            //var pts = this.trails[jointIdx];
+            var pts = this.trails[trailId];
+            var jointIdx = this.trailsJointId[trailId];
             var ret = findNearestPoint(pts, pt);
             //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
             if (ret.d < 10) {
+                if (jointId >= 0 && jointId != jointIdx)
+                    return;
+                this.draggedTrail = trailId;
                 this.draggedJoint = jointIdx;
-                var n = this.trailsLow[jointIdx] + ret.iMin;
-                this.draggedBody = this.trailsBodyIdx[jointIdx];
+                //var n = this.trailsLow[jointIdx] + ret.iMin;
+                //this.draggedBody = this.trailsBodyIdx[jointIdx];
+                var n = this.trailsLow[trailId] + ret.iMin;
+                this.draggedBody = this.trailsBodyIdx[trailId];
                 this.player.seekIdx(n);
             }
         }
     }
 
-    dragJoint(jointIdx, pt) {
-        var pts = this.trails[jointIdx];
-        var low = this.trailsLow[jointIdx]
+    //dragJoint(jointIdx, pt) {
+    dragJoint(trailId, pt) {
+        var jointId = this.trailsJointId[trailId];
+        var pts = this.trails[trailId];
+        var low = this.trailsLow[trailId];
         if (low < 0)
             low = 0;
         var cur = player.frameNum;
@@ -170,8 +182,10 @@ class BodyDrawer
         this.mousePoint = pt;
         this.controlPoint = pt;
         //console.log("mouseDrag "+pt);
-        if (this.draggedJoint >= 0)
-            this.dragJoint(this.draggedJoint, pt);
+        //if (this.draggedJoint >= 0)
+        //    this.dragJoint(this.draggedJoint, pt);
+        if (this.draggedTrail)
+            this.dragJoint(this.draggedTrail, pt);
     }
 
     onMouseUp(e) {
@@ -342,9 +356,14 @@ class BodyDrawer
     drawTrail(frames, bodyIdx, jointId, color, low, high) {
         //console.log("drawTrail "+bodyIdx+" "+jointId);
         var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
-        this.trails[jointId] = pts;
-        this.trailsLow[jointId] = low;
-        this.trailsBodyIdx[jointId] = bodyIdx;
+        var trailId = bodyIdx+"_"+jointId;
+        //this.trails[jointId] = pts;
+        //this.trailsLow[jointId] = low;
+        //this.trailsBodyIdx[jointId] = bodyIdx;
+        this.trails[trailId] = pts;
+        this.trailsLow[trailId] = low;
+        this.trailsBodyIdx[trailId] = bodyIdx;
+        this.trailsJointId[trailId] = jointId;
         this.drawPolyline(pts, color);
         this.drawDrag();
     }
@@ -392,13 +411,14 @@ class BodyDrawer
             this.drawBody(body, bodyIndex);
             var joint = body.joints[RHAND];
             var pt = [joint.colorX * this.width, joint.colorY * this.height];
-            if (this.draggedJoint < 0)
-                this.findDraggedJoint(pt);
-            if (this.draggedJoint >= 0) {
+            if (this.draggedTrail == null)
+                this.findDraggedJoint(pt, RHAND);
+            if (this.draggedTrail) {
                 this.controlPoint = pt;
-                var ret = this.dragJoint(this.draggedJoint, pt);
+                var ret = this.dragJoint(this.draggedTrail, pt);
                 if (ret.d > 200) {
                     console.log("break dragging");
+                    this.draggedTrail = null;
                     this.draggedJoint = -1;
                     this.controlPoint = null;
                 }
