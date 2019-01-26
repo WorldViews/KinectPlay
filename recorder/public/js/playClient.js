@@ -71,8 +71,9 @@ class Player {
     constructor(recId) {
         this.setSession(recId);
         this.WT = 20;
-        this.framesBehind = 60;
-        this.framesAhead = 60;
+        this.framesPerSec = 30.0;
+        this.secondsBehind = 5;
+        this.secondsAhead = 5;
         var inst = this;
         this.currentImage = null;
         this.bodyDrawer = new BodyDrawer(this);
@@ -274,6 +275,12 @@ class Player {
 
 //var bodyDrawer = null;
 
+function update()
+{
+    console.log("update");
+    player.redraw();
+}
+
 $(document).ready(()=> {
     console.log("************READY**********");
     var recId = getParameterByName("recId");
@@ -296,4 +303,9 @@ $(document).ready(()=> {
         //console.log("window.resize");
         player.redraw();
     });
+
+    var gui = new dat.GUI();
+    gui.add(player, 'WT', 0, 100).onChange(update);
+    gui.add(player, 'secondsBehind', 0, 5).onChange(update);
+    gui.add(player, 'secondsAhead',  0, 5).onChange(update);
 })

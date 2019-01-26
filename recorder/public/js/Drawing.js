@@ -194,6 +194,10 @@ class BodyDrawer
         }
         var showTrails = $("#showTrails").is(':checked');
         var player = this.player;
+        var fps = player.framesPerSec;
+        var framesAhead = Math.round(player.secondsAhead*fps);
+        var framesBehind = Math.round(player.secondsBehind*fps);
+        console.log("ahead behind: "+framesAhead+" "+framesBehind);
         for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
@@ -204,8 +208,8 @@ class BodyDrawer
                         var color = colors[i];
                         this.drawTrail(player.bodyFrames, bodyIndex,
                                        joint, color,
-                                       player.frameNum-player.framesBehind,
-                                       player.frameNum+player.framesAhead);
+                                       player.frameNum-framesBehind,
+                                       player.frameNum+framesAhead);
                     }
                 }
                 this.drawBody(body, bodyIndex);
