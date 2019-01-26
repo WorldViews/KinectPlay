@@ -354,6 +354,10 @@ class BodyDrawer
         var player = this.player;
         var i1 = Math.max(player.frameNum-1, 0);
         var i2 = Math.min(player.frameNum+1, frames.length-1);
+        //console.log("i1: "+i1+"  i2: "+i2);
+        if (i1 == 0) {
+            return; // frame indices start at 1
+        }
         var f = frames[player.frameNum];
         var f1 = frames[i1];
         var f2 = frames[i2];
