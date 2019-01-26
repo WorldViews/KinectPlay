@@ -25,6 +25,21 @@ function dist2(pt1, pt2)
     return dx*dx+dy*dy;
 }
 
+function smooth(pts)
+{
+    var npts = [];
+    var N = pts.length;
+    if (N == 0)
+        return pts;
+    npts[0] = pts[0];
+    npts[N-1] = pts[N-1];
+    for (var i=1; i<N-1; i++) {
+        npts[i] = [(pts[i-1][0]+pts[i][0]+pts[i+1][0])/3.0,
+                   (pts[i-1][1]+pts[i][1]+pts[i+1][1])/3.0];
+    }
+    return npts;
+}
+
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return [evt.clientX - rect.left, evt.clientY - rect.top];
@@ -117,6 +132,7 @@ class BodyDrawer
 
     findDraggedJoint(pt) {
         this.draggedJoint = -1;
+        this.draggedBody = -1;
         for (var jointIdx in this.trails) {
             var pts = this.trails[jointIdx];
             var ret = findNearestPoint(pts, pt);
@@ -124,6 +140,7 @@ class BodyDrawer
             if (ret.d < 10) {
                 this.draggedJoint = jointIdx;
                 var n = this.trailsLow[jointIdx] + ret.iMin;
+                this.draggedBody = this.trailsBodyIdx[jointIdx];
                 this.player.seekIdx(n);
             }
         }
@@ -197,7 +214,7 @@ class BodyDrawer
         var fps = player.framesPerSec;
         var framesAhead = Math.round(player.secondsAhead*fps);
         var framesBehind = Math.round(player.secondsBehind*fps);
-        console.log("ahead behind: "+framesAhead+" "+framesBehind);
+        //console.log("ahead behind: "+framesAhead+" "+framesBehind);
         for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
 	    if(body.tracked) {
@@ -210,6 +227,7 @@ class BodyDrawer
                                        joint, color,
                                        player.frameNum-framesBehind,
                                        player.frameNum+framesAhead);
+                        this.drawVelocity(player.bodyFrames, bodyIndex, joint, color);
                     }
                 }
                 this.drawBody(body, bodyIndex);
@@ -304,6 +322,8 @@ class BodyDrawer
             var joint = body.joints[jointId];
             pts.push([joint.colorX*this.width, joint.colorY*this.height]);
         }
+        for (var j=0; j<this.player.smoothNum; j++)
+            pts = smooth(pts);
         return pts;
     }
 
@@ -327,6 +347,35 @@ class BodyDrawer
         this.trailsBodyIdx[jointId] = bodyIdx;
         this.drawPolyline(pts, color);
         this.drawDrag();
+    }
+
+    drawVelocity(frames, bodyIdx, jointId, color, low, high) {
+        //console.log("drawVector "+bodyIdx+" "+jointId);
+        var player = this.player;
+        var i1 = Math.max(player.frameNum-1, 0);
+        var i2 = Math.min(player.frameNum+1, frames.length-1);
+        var f = frames[player.frameNum];
+        var f1 = frames[i1];
+        var f2 = frames[i2];
+        var jt = f.bodies[bodyIdx].joints[jointId];
+        var jt1 = f1.bodies[bodyIdx].joints[jointId];
+        var jt2 = f2.bodies[bodyIdx].joints[jointId];
+        var pt =  [jt.colorX, jt.colorY];
+        var pt2 = [jt2.colorX, jt2.colorY];
+        var v = [pt2[0]-pt[0], pt2[1]-pt[1]];
+        this.drawVector(pt,v);
+    }
+    
+    drawVector(pt, v) {
+        var L = 1.5;
+        var pt2 = [pt[0]+L*v[0], pt[1]+L*v[1]];
+        var ctx = this.ctx;
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = 'purple';
+        ctx.beginPath();
+        ctx.moveTo(this.width*pt[0], this.height*pt[1]);
+        ctx.lineTo(this.width*pt2[0], this.height*pt2[1]);
+        ctx.stroke();
     }
 
     handleLive(frame) {
