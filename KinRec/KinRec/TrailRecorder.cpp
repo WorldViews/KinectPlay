@@ -14,6 +14,7 @@ TrailRecorder::TrailRecorder(string recJSONPath, KinRecorder* pKinRec) {
 	recFS = new FileStorage(recJSONPath, FileStorage::WRITE);
 	FileStorage& fs = *recFS;
 	fs << "startTime" << pKinRec->startTime;
+	fs << "sessionType" << "kinect";
 	fs << "frames" << "[";
 }
 
