@@ -3,6 +3,7 @@ var Kinect2 = require('../lib/kinect2'), //change to 'kinect2' in a project of y
     express = require('express'),
     app = express(),
     recsApp = express();
+    handRecsApp = express();
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
     fs = require('fs'),
@@ -77,27 +78,6 @@ function getNames(dirPath)
     });
 }
 
-
-function sendSessions0(dirPath, req, resp)
-{
-    var obj = {dir: dirPath, sessions:{}};
-    console.log("sendSessions: dirPath: "+dirPath);
-    fs.readdir(dirPath, function(err, items) {
-        console.log("err: "+err);
-        if (err) {
-            obj.error = err;
-            resp.send(obj);
-            return;
-        }
-        //console.log(items);
-        for (var i=0; i<items.length; i++) {
-            console.log(items[i]);
-            obj.sessions[items[i]] = items[i];
-        }
-        console.log("sendSessions obj: "+JSON.stringify(obj, null, 3));
-        resp.send(obj);
-    });
-}
 
 function sendSessions(dirPath, req, resp)
 {
@@ -265,6 +245,17 @@ if(kinect.open()) {
                 resp.send(obj);
             });
         });
+
+        app.get('/handSessions', function (req, resp) {
+            console.log("/sessions path: "+req.path);
+            var dirPath = req.path.slice("/dir/".length);
+            dirPath =__dirname + "/leapRecordings";
+            getNames(dirPath).then((items) => {
+                console.log("Names: "+items);
+                var obj = {dir: dirPath, sessions:items};
+                resp.send(obj);
+            });
+        });
     
 	app.get('/color', function(req, res) {
 		res.sendFile(__dirname + '/public/index.html');
@@ -286,7 +277,9 @@ if(kinect.open()) {
 
 	app.use(express.static(__dirname + '/public'));
         recsApp.use(express.static(__dirname + '/recordings'));
+        handRecsApp.use(express.static(__dirname + '/leapRecordings'));
         app.use('/recs', recsApp);
+        app.use('/hand/recs', handRecsApp);
 
 	kinect.on('bodyFrame', function(bodyFrame){
 		//io.sockets.emit('bodyFrame', bodyFrame);
