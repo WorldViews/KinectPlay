@@ -3,6 +3,7 @@ var defaultRecId = "2019_01_17__15_17_07";
 defaultRecId = null;
 var player = null;
 var kinClient = null;
+var handDrawer = null;
 
 /*
 in the saved JSON file there are lists of joints.  It is saved
@@ -120,7 +121,9 @@ class Player {
         this.bodyDrawer.draw(this.lastBodyFrame);
         if (this.lastHandFrame) {
             var canvas = this.bodyDrawer.canvas;
-            vizHand(this.lastHandFrame, canvas, false);
+            if (handDrawer == null)
+                handDrawer = new HandGraphic(canvas);
+            handDrawer.draw(this.lastHandFrame, false);
         }
     }
 
