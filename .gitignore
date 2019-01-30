@@ -12,3 +12,5 @@ build/
 junk/
 */junk/
 .node_pre_gyprc
+recorder/test.jpg
+recorder/lastLeapFrame.json
