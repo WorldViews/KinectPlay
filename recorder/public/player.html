@@ -30,7 +30,8 @@
   &nbsp;&nbsp;&nbsp;
   <input id="runTracker" type="Checkbox" > Live Tracker
   &nbsp;&nbsp;&nbsp;
-  <input id="showSessions" type="Button" value="Sessions">
+  <input id="kinectSessions" type="Button" value="Sessions">
+  <input id="leapSessions" type="Button" value="Leap Sessions">
   <br>
   <input id="timeSlider" type="range" min="0" max="1000"
          style="width:90%;">
@@ -47,18 +48,18 @@
   <script src="js/KinClient.js"></script>
   <script src="js/playClient.js"></script>
   <script src="js/Drawing.js"></script>
+  <script src="js/vizHand.js"></script>
   <br>
-<!--
-  Sessions:
-  <div id="sessionList">
-  </div>
--->
   <script>
     var sessionsWindow = null;
-    function showSessions() {
+    function kinectSessions() {
         sessionsWindow = window.open("recordings.html", "sessionsWindow");
     }
-    $("#showSessions").click(() => showSessions());
+    function leapSessions() {
+        sessionsWindow = window.open("leapRecordings.html", "sessionsWindow");
+    }
+    $("#kinectSessions").click(() => kinectSessions());
+    $("#leapSessions").click(() => leapSessions());
 </script>
 </body>
 </html>

@@ -76,6 +76,7 @@ class Player {
         this.secondsAhead = 1;
         this.smoothNum = 1;
         var inst = this;
+        this.recsDir = "/recs/";
         this.currentImage = null;
         this.bodyDrawer = new BodyDrawer(this);
         this.pendingLoad = null;
@@ -116,14 +117,25 @@ class Player {
     redraw() {
         this.bodyDrawer.resize()
         this.bodyDrawer.clearBackground(this.currentImage);
-        this.bodyDrawer.draw(this.lastBodyFrame, player);
+        this.bodyDrawer.draw(this.lastBodyFrame);
+        if (this.lastHandFrame) {
+            var canvas = this.bodyDrawer.canvas;
+            vizHand(this.lastHandFrame, canvas, false);
+        }
     }
 
-    setSession(recId) {
-        console.log("setSession "+recId);
-        this.recordingId = recId;
+    setSession(recId, stype) {
+        console.log("setSession "+recId+" "+stype);
         if (recId == null)
             return;
+        if (stype == "body")
+            this.recsDir = "/recs/";
+        else if (stype == "hand")
+            this.recsDir = "/hand/recs/";
+        else {
+            alert("unrecognized session type "+stype);
+        }
+        this.recordingId = recId;
         $("#sessionName").html(recId+"...");
         $(document).attr('title', 'KVR '+recId);
         //this.frameType = "bmp";
@@ -133,6 +145,7 @@ class Player {
         this.prevFrameNum = 0;
         this.framesPerSec = 30.0;
         this.bodyFrames = [];
+        this.handFrames = [];
         this.loadIndex();
         this.playing = false;
     }
@@ -159,9 +172,12 @@ class Player {
     }
     
     showTime() {
-        if (this.bodyFrames.length == 0)
+        if (this.numFrames == 0)
             return;
-        var v = this.frameNum * 1000 / this.bodyFrames.length;
+        //if (this.bodyFrames.length == 0)
+        //    return;
+        //var v = this.frameNum * 1000 / this.bodyFrames.length;
+        var v = this.frameNum * 1000 / this.numFrames;
         $("#timeSlider").val(v);
         $("#time").html(sprintf("%.2f", this.getCurrentTime()));
     }
@@ -169,7 +185,9 @@ class Player {
     loadIndex() {
         this.loading = true;
         this.bodyFrames = [];
-        var url = "/recs/"+this.recordingId+"/rec.json";
+        this.handFrames = [];
+        //var url = "/recs/"+this.recordingId+"/rec.json";
+        var url = this.recsDir+this.recordingId+"/rec.json";
         $("#stats").html("loading: "+url);
         var inst = this;
         getJSON(url,
@@ -186,10 +204,20 @@ class Player {
     {
         this.numFrames = data.numFrames;
         this.duration = data.duration;
-        data.frames.forEach(frame => {
-            frame = fixFrame(frame);
-            this.bodyFrames[frame.frameNum] = frame;
-        })
+        this.sessionType = data.sessionType || "kinect";
+        if (data.frames) {
+            data.frames.forEach(frame => {
+                frame = fixFrame(frame);
+                this.bodyFrames[frame.frameNum] = frame;
+            })
+        }
+        if (data.frameRecs) {
+            var n = 1;
+            data.frameRecs.forEach(rec => {
+                this.handFrames[n] = rec;
+                n++;
+            })
+        }
         this.loading = false;
         this.seekIdx(1);
         this.play();
@@ -204,7 +232,7 @@ class Player {
     
     loadIndex_() {
         this.frameNum++;
-        var url = "/recs/"+this.recordingId+"/bodyFrame"+
+        var url = this.recsDir+this.recordingId+"/bodyFrame"+
             this.frameNum+".json";
         $("#stats").html("loading: "+url);
         var inst = this;
@@ -246,7 +274,7 @@ class Player {
             this.frameNum++;
         }
         if (this.frameNum != this.prevFrameNum) {
-            var url = "/recs/"+this.recordingId+"/image"+
+            var url = this.recsDir+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
             $("#stats").html("url: "+url);
             if (this.pendingLoad) {
@@ -270,11 +298,13 @@ class Player {
         if (frame) {
             this.lastBodyFrame = frame;
         }
+        if (this.handFrames) {
+            this.lastHandFrame = this.handFrames[this.frameNum];
+        }
         this.showTime();
     }
 }
 
-//var bodyDrawer = null;
 
 function update()
 {
@@ -285,7 +315,6 @@ function update()
 $(document).ready(()=> {
     console.log("************READY**********");
     var recId = getParameterByName("recId");
-    //bodyDrawer = new BodyDrawer();
     if (!recId)
         recId = defaultRecId;
     player = new Player(recId);
@@ -310,4 +339,6 @@ $(document).ready(()=> {
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7]).onChange(update);
+    gui.close();
+    player.gui = gui;
 })

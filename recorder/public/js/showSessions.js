@@ -1,7 +1,7 @@
 
-function loadSessions(handler)
+function loadSessions(handler, url)
 {
-    var sessionsURL = "/sessions";
+    var sessionsURL = url || "/sessions";
     console.log("loadSessions ****** "+sessionsURL);
     $.getJSON(sessionsURL).done((data, status) => {
         console.log("sess data: "+JSON.stringify(data,null,2));
