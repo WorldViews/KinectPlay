@@ -15,12 +15,12 @@
   </div>
   <script>
     $("#sessionsGo").click(() => {
-    opener.player.setSession("DonOffice_1");
-    window.close();
+       opener.player.setSession("DonOffice_1", "body");
+       window.close();
     });
     $(document).ready(() => {
         loadSessions(session => {
-           opener.player.setSession(session);
+           opener.player.setSession(session, "body");
            window.close();
         });
     });
