@@ -76,16 +76,22 @@ class Player {
         this.secondsBehind = 1;
         this.secondsAhead = 1;
         this.smoothNum = 1;
+        this.Rx = 180;
+        this.Ry = 0;
+        this.Rz = 0;
+        this.scale = 1.8;
+        this.Tx = 642;
+        this.Ty = 545;
         var inst = this;
         this.recsDir = "/recs/";
         this.currentImage = null;
-        this.bodyDrawer = new BodyDrawer(this);
+        this.bodyDrawer = new Viewer(this);
         this.pendingLoad = null;
         this.loadCollisions = 0; // times a new image is requested before old one loaded.
         var vj = {};
         vj[RHAND] = true;
         vj[LHAND] = true;
-        this.bodyDrawer.setVisibleJoints(vj);
+        this.bodyDrawer.bodyGraphic.setVisibleJoints(vj);
         this.kinClient = null;
         this.runTracker = false;
         $("#runTracker").click(() => {
@@ -121,8 +127,12 @@ class Player {
         this.bodyDrawer.draw(this.lastBodyFrame);
         if (this.lastHandFrame) {
             var canvas = this.bodyDrawer.canvas;
-            if (handDrawer == null)
+            if (handDrawer == null) {
                 handDrawer = new HandGraphic(canvas);
+                handDrawer.setEuler([this.Rx, this.Ry, this.Rz]);
+                handDrawer.setTranslation([this.Tx, this.Ty]);
+                handDrawer.setScale(this.scale);
+            }
             handDrawer.draw(this.lastHandFrame, false);
         }
     }
@@ -149,6 +159,8 @@ class Player {
         this.framesPerSec = 30.0;
         this.bodyFrames = [];
         this.handFrames = [];
+        this.lastBodyFrame = null;
+        this.lastHandFrame = null;
         this.loadIndex();
         this.playing = false;
     }
@@ -227,12 +239,6 @@ class Player {
         this.data = data;
     }
 
-    loadIndexOLD() {
-        this.loading = true;
-        this.frameNum = 0;
-        this.loadIndex_();
-    }
-    
     loadIndex_() {
         this.frameNum++;
         var url = this.recsDir+this.recordingId+"/bodyFrame"+
@@ -312,6 +318,16 @@ class Player {
 function update()
 {
     console.log("update");
+    if (handDrawer) {
+        var p = player;
+        handDrawer.setProps({
+            euler: [p.Rx, p.Ry, p.Rz],
+            translation: [p.Tx, p.Ty],
+            scale: p.scale});
+        //handDrawer.setEuler([p.Rx, p.Ry, p.Rz]);
+        //handDrawer.setTranslation([p.Tx, p.Ty]);
+        //handDrawer.setScale([p.scale]);
+    }
     player.redraw();
 }
 
@@ -342,6 +358,14 @@ $(document).ready(()=> {
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7]).onChange(update);
+    var lg = gui.addFolder("Leap");
+    lg.add(player, 'Rx', 0, 360).onChange(update);
+    lg.add(player, 'Ry', 0, 360).onChange(update);
+    lg.add(player, 'Rz', 0, 360).onChange(update);
+    lg.add(player, 'Tx', 0, 1000).onChange(update);
+    lg.add(player, 'Ty', 0, 1000).onChange(update);
+    lg.add(player, 'scale', 0.5, 2.5).onChange(update);
+    lg.close()
     gui.close();
     player.gui = gui;
 })

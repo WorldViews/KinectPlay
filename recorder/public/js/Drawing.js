@@ -1,41 +1,24 @@
 
-
 var LHAND = 7;
 var RHAND = 11;
 var TRAIL_JOINTS = [RHAND, LHAND];
 
-var colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff'];
-
-// handstate circle size
-var HANDSIZE = 20;
-
-// closed hand state color
-var HANDCLOSEDCOLOR = "red";
-
-// open hand state color
-var HANDOPENCOLOR = "green";
-
-// lasso hand state color
-var HANDLASSOCOLOR = "blue";
-
-function dist2(pt1, pt2)
-{
-    var dx = pt1[0]-pt2[0];
-    var dy = pt1[1]-pt2[1];
-    return dx*dx+dy*dy;
+function dist2(pt1, pt2) {
+    var dx = pt1[0] - pt2[0];
+    var dy = pt1[1] - pt2[1];
+    return dx * dx + dy * dy;
 }
 
-function smooth(pts)
-{
+function smooth(pts) {
     var npts = [];
     var N = pts.length;
     if (N == 0)
         return pts;
     npts[0] = pts[0];
-    npts[N-1] = pts[N-1];
-    for (var i=1; i<N-1; i++) {
-        npts[i] = [(pts[i-1][0]+pts[i][0]+pts[i+1][0])/3.0,
-                   (pts[i-1][1]+pts[i][1]+pts[i+1][1])/3.0];
+    npts[N - 1] = pts[N - 1];
+    for (var i = 1; i < N - 1; i++) {
+        npts[i] = [(pts[i - 1][0] + pts[i][0] + pts[i + 1][0]) / 3.0,
+        (pts[i - 1][1] + pts[i][1] + pts[i + 1][1]) / 3.0];
     }
     return npts;
 }
@@ -43,59 +26,52 @@ function smooth(pts)
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return [evt.clientX - rect.left, evt.clientY - rect.top];
-//    return {
-//      x: evt.clientX - rect.left,
-//      y: 
-//    };
 }
 
-function findNearestPoint(pts, pt)
-{
+function findNearestPoint(pts, pt) {
     var d2Min = 1.0E100;
     var iMin = null;
-    
-    for (var i=0; i<pts.length; i++) {
-        var d2 = dist2(pts[i],pt);
+
+    for (var i = 0; i < pts.length; i++) {
+        var d2 = dist2(pts[i], pt);
         if (d2 < d2Min) {
             iMin = i;
             d2Min = d2;
         }
     }
-    var ret = {iMin, d: Math.sqrt(d2Min)};
+    var ret = { iMin, d: Math.sqrt(d2Min) };
     if (iMin != null)
         ret.pt = pts[iMin];
     return ret;
 }
 
-function findBestPoint(pts, pt, low, cur, A)
-{
+function findBestPoint(pts, pt, low, cur, A) {
     //console.log("findBestPoint "+low+" "+cur);
     //return findNearestPoint(pts, pt);
     var sMin = 1.0E100;
     var dMin = 1.0E100;
     var iMin = null;
-    
-    for (var i=0; i<pts.length; i++) {
-        var d = Math.sqrt(dist2(pts[i],pt));
-        var dn = cur - (i+low);
-        var dt = dn * 1.0/20;
+
+    for (var i = 0; i < pts.length; i++) {
+        var d = Math.sqrt(dist2(pts[i], pt));
+        var dn = cur - (i + low);
+        var dt = dn * 1.0 / 20;
         //console.log("dt: "+dt);
-        var s = d + A*Math.abs(dt);
+        var s = d + A * Math.abs(dt);
         if (s < sMin) {
             sMin = s;
             iMin = i;
             dMin = d;
         }
     }
-    var ret = {iMin, d: dMin, s: sMin};
+    var ret = { iMin, d: dMin, s: sMin };
     if (iMin != null)
         ret.pt = pts[iMin];
     return ret;
 }
 
 
-class BodyDrawer
-{
+class Viewer {
     constructor(player) {
         var inst = this;
         this.player = player;
@@ -109,20 +85,15 @@ class BodyDrawer
         this.trailsBodyIdx = {};
         this.trailsJointId = {};
         this.mousePoint = null;
-        this.visibleJoints = null;
-        //this.visibleJoints = [RHAND, LHAND];
-        console.log("Visible Joints: "+JSON.stringify(this.visibleJoints));
+        console.log("Visible Joints: " + JSON.stringify(this.visibleJoints));
         this.mouseIsDown = false;
+        this.bodyGraphic = new BodyGraphic(this);
         $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
         $("#bodyCanvas").mousedown(e => inst.onMouseDown(e));
         $("#bodyCanvas").mouseup(e => inst.onMouseUp(e));
     }
 
-    setVisibleJoints(joints)
-    {
-        this.visibleJoints = joints;
-    }
-    
+
     onMouseDown(e) {
         console.log("mouseDown");
         var pt = getMousePos(this.canvas, e);
@@ -202,11 +173,10 @@ class BodyDrawer
         //console.log("w: "+this.width);
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-//        this.canvas.height = window.innerHeight;
+        //        this.canvas.height = window.innerHeight;
     }
-    
-    clearBackground(img)
-    {
+
+    clearBackground(img) {
         //console.log("clearBackground "+img);
         var ctx = this.ctx;
         ctx.fillStyle = "white";
@@ -217,126 +187,39 @@ class BodyDrawer
         }
     }
 
-    draw(bodyFrame)
-    {
-        if (!bodyFrame) {
-            console.log("*** drawBodies no bodyFrame");
-            return;
-        }
-        var showTrails = $("#showTrails").is(':checked');
-        var player = this.player;
-        var fps = player.framesPerSec;
-        var framesAhead = Math.round(player.secondsAhead*fps);
-        var framesBehind = Math.round(player.secondsBehind*fps);
-        //console.log("ahead behind: "+framesAhead+" "+framesBehind);
-        for (var bodyIndex=0; bodyIndex<bodyFrame.bodies.length; bodyIndex++) {
-            var body = bodyFrame.bodies[bodyIndex];
-	    if(body.tracked) {
-                //this.drawBody(body, bodyIndex);
-                if (showTrails && player) {
-                    for (var i=0; i<TRAIL_JOINTS.length; i++) {
-                        var joint = TRAIL_JOINTS[i];
-                        var color = colors[i];
-                        this.drawTrail(player.bodyFrames, bodyIndex,
-                                       joint, color,
-                                       player.frameNum-framesBehind,
-                                       player.frameNum+framesAhead);
-                        this.drawVelocity(player.bodyFrames, bodyIndex, joint, color);
-                    }
-                }
-                this.drawBody(body, bodyIndex);
-            }
-        }
+    draw(bodyFrame) {
+        this.bodyGraphic.draw(bodyFrame);
     }
 
-    drawBody(body, index) {
-	//draw hand states
-        //console.log("drawBody "+index);
-        this.updateHandState(body.leftHandState, body.joints[7]);
-	this.updateHandState(body.rightHandState, body.joints[11]);
-        var ctx = this.ctx;
-        var color = colors[index];
-        var s = 10
-	for(var jointType in body.joints) {
-            if (this.visibleJoints && !this.visibleJoints[jointType])
-                continue;
-	    var joint = body.joints[jointType];
-	    ctx.fillStyle = color;
-            //ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
-            ctx.fillRect(joint.colorX * this.width - s/2.0, joint.colorY * this.height - s/2.0, s, s);
-	}
-        /*
-	for(var j in body.joints) {
-	    var joint = body.joints[j];
-            var jointType = joint.jointType;
-            if (this.visibleJoints && !this.visibleJoints[jointType])
-                continue;
-	    ctx.fillStyle = color;
-            ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
-	}
-        */
-    }
-
-    drawHand(jointPoint, handColor) {
-        // draw semi transparent hand cicles
-        var ctx = this.ctx;
-        ctx.globalAlpha = 0.75;
-        ctx.beginPath();
-        ctx.fillStyle = handColor;
-        ctx.arc(jointPoint.colorX * this.width, jointPoint.colorY * this.height, HANDSIZE, 0, Math.PI * 2, true);
-        ctx.fill();
-        ctx.closePath();
-        ctx.globalAlpha = 1;
-    }
-
-    updateHandState(handState, jointPoint) {
-        switch (handState) {
-        case 3:
-	    this.drawHand(jointPoint, HANDCLOSEDCOLOR);
-	    break;
-
-        case 2:
-	    this.drawHand(jointPoint, HANDOPENCOLOR);
-	    break;
-
-        case 4:
-	    this.drawHand(jointPoint, HANDLASSOCOLOR);
-	    break;
-        }
-    }
-
-    drawPolyline(pts, color)
-    {
+    drawPolyline(pts, color) {
         var ctx = this.ctx;
 
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = color;
         ctx.beginPath();
-        for (var i = 0; i < pts.length; i++)
-        {
+        for (var i = 0; i < pts.length; i++) {
             var pt = pts[i];
             ctx.lineTo(pt[0], pt[1]);
         }
         ctx.stroke();
     }
 
-    computeTrail(frames, bodyIdx, jointId, startNum, endNum)
-    {
+    computeTrail(frames, bodyIdx, jointId, startNum, endNum) {
         //console.log("computeTrail "+bodyIdx+" "+jointId+" "+startNum+" "+endNum);
         var pts = [];
-        for (var i=startNum; i<endNum; i++) {
+        for (var i = startNum; i < endNum; i++) {
             if (i < 1 || i > frames.length)
                 continue;
             var frame = frames[i];
             if (!frame) {
-                console.log("No frame for i: "+i);
+                console.log("No frame for i: " + i);
                 continue;
             }
             var body = frame.bodies[bodyIdx];
             var joint = body.joints[jointId];
-            pts.push([joint.colorX*this.width, joint.colorY*this.height]);
+            pts.push([joint.colorX * this.width, joint.colorY * this.height]);
         }
-        for (var j=0; j<this.player.smoothNum; j++)
+        for (var j = 0; j < this.player.smoothNum; j++)
             pts = smooth(pts);
         return pts;
     }
@@ -352,14 +235,11 @@ class BodyDrawer
         ctx.lineTo(this.controlPoint[0], this.controlPoint[1]);
         ctx.stroke();
     }
-    
+
     drawTrail(frames, bodyIdx, jointId, color, low, high) {
         //console.log("drawTrail "+bodyIdx+" "+jointId);
         var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
-        var trailId = bodyIdx+"_"+jointId;
-        //this.trails[jointId] = pts;
-        //this.trailsLow[jointId] = low;
-        //this.trailsBodyIdx[jointId] = bodyIdx;
+        var trailId = bodyIdx + "_" + jointId;
         this.trails[trailId] = pts;
         this.trailsLow[trailId] = low;
         this.trailsBodyIdx[trailId] = bodyIdx;
@@ -371,8 +251,8 @@ class BodyDrawer
     drawVelocity(frames, bodyIdx, jointId, color, low, high) {
         //console.log("drawVector "+bodyIdx+" "+jointId);
         var player = this.player;
-        var i1 = Math.max(player.frameNum-1, 0);
-        var i2 = Math.min(player.frameNum+1, frames.length-1);
+        var i1 = Math.max(player.frameNum - 1, 0);
+        var i2 = Math.min(player.frameNum + 1, frames.length - 1);
         //console.log("i1: "+i1+"  i2: "+i2);
         if (i1 == 0) {
             return; // frame indices start at 1
@@ -383,32 +263,32 @@ class BodyDrawer
         var jt = f.bodies[bodyIdx].joints[jointId];
         var jt1 = f1.bodies[bodyIdx].joints[jointId];
         var jt2 = f2.bodies[bodyIdx].joints[jointId];
-        var pt =  [jt.colorX, jt.colorY];
+        var pt = [jt.colorX, jt.colorY];
         var pt2 = [jt2.colorX, jt2.colorY];
-        var v = [pt2[0]-pt[0], pt2[1]-pt[1]];
-        this.drawVector(pt,v);
+        var v = [pt2[0] - pt[0], pt2[1] - pt[1]];
+        this.drawVector(pt, v);
     }
-    
+
     drawVector(pt, v) {
         var L = 1.5;
-        var pt2 = [pt[0]+L*v[0], pt[1]+L*v[1]];
+        var pt2 = [pt[0] + L * v[0], pt[1] + L * v[1]];
         var ctx = this.ctx;
         ctx.lineWidth = 3.5;
         ctx.strokeStyle = 'purple';
         ctx.beginPath();
-        ctx.moveTo(this.width*pt[0], this.height*pt[1]);
-        ctx.lineTo(this.width*pt2[0], this.height*pt2[1]);
+        ctx.moveTo(this.width * pt[0], this.height * pt[1]);
+        ctx.lineTo(this.width * pt2[0], this.height * pt2[1]);
         ctx.stroke();
     }
 
     handleLive(frame) {
         //console.log("handleLive");
         this.player.redraw();
-        for (var bodyIndex=0; bodyIndex<frame.bodies.length; bodyIndex++) {
+        for (var bodyIndex = 0; bodyIndex < frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];
             if (!body.tracked)
                 continue;
-            this.drawBody(body, bodyIndex);
+            this.bodyGraphic.drawBody(body, bodyIndex);
             var joint = body.joints[RHAND];
             var pt = [joint.colorX * this.width, joint.colorY * this.height];
             if (this.draggedTrail == null)
@@ -426,5 +306,4 @@ class BodyDrawer
         }
     }
 }
-
 
