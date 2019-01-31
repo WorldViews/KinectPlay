@@ -225,6 +225,50 @@ class HandGraphic {
             ctx.stroke();
         }
     }
+
+    drawTrail(frames, player) {
+        var viewer = player.viewer;
+        if (!frames) {
+            console.log("no frames");
+            return;
+        }
+        player.trails = {};
+        player.trailsLow = {};
+        player.trailsBodyIdx = {};
+        player.trailsJointId = {};
+
+        var n = player.getCurrentIdx();
+        var fps = player.framesPerSec;
+        var framesAhead = Math.round(player.secondsAhead * fps);
+        var framesBehind = Math.round(player.secondsBehind * fps);
+        var low = n - framesBehind;
+        var high = n + framesAhead;
+        if (low < 1)
+            low = 1;
+        if (high > frames.length-1)
+            high = frames.length -1;
+        //console.log("drawTrail "+n+" "+low+" "+high);
+        //var handIds = [0,1,2];
+        var trailId = 0;
+        for (var handId=0; handId<3; handId++) {
+            var pts = [];
+            for (var i=low; i<high; i++) {
+                var frame = frames[i];
+                var hands = frame.hands;
+                if (!hands || hands.length <= handId)
+                    continue;
+                var pt = this.wToC(hands[handId].wrist);
+                pts.push(pt);        
+            }
+            if (pts.length == 0)
+                continue;
+            viewer.drawPolyline(pts, 'red');
+            player.trails[trailId] = pts;
+            player.trailsLow[trailId] = low;
+            trailId++;
+            //console.log("hands trail pts:", pts);
+        }
+     }
 }
 
 function getJointStyle(skStyle, fingerType, fingerJoint) {
