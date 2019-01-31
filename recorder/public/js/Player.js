@@ -3,7 +3,7 @@ var defaultRecId = "2019_01_17__15_17_07";
 defaultRecId = null;
 var player = null;
 var kinClient = null;
-var handDrawer = null;
+var handGraphic = null;
 
 /*
 in the saved JSON file there are lists of joints.  It is saved
@@ -85,13 +85,13 @@ class Player {
         var inst = this;
         this.recsDir = "/recs/";
         this.currentImage = null;
-        this.bodyDrawer = new Viewer(this);
+        this.viewer = new Viewer(this);
         this.pendingLoad = null;
         this.loadCollisions = 0; // times a new image is requested before old one loaded.
         var vj = {};
         vj[RHAND] = true;
         vj[LHAND] = true;
-        this.bodyDrawer.bodyGraphic.setVisibleJoints(vj);
+        this.viewer.bodyGraphic.setVisibleJoints(vj);
         this.kinClient = null;
         this.runTracker = false;
         $("#runTracker").click(() => {
@@ -117,23 +117,24 @@ class Player {
     handlePose() {
         //console.log("new pose");
         if (this.runTracker && this.kinClient) {
-            this.bodyDrawer.handleLive(this.kinClient.lastBodyFrame);
+            this.viewer.handleLive(this.kinClient.lastBodyFrame);
         }
     }
 
     redraw() {
-        this.bodyDrawer.resize()
-        this.bodyDrawer.clearBackground(this.currentImage);
-        this.bodyDrawer.draw(this.lastBodyFrame);
+        this.viewer.resize()
+        this.viewer.clearBackground(this.currentImage);
+        this.viewer.draw(this.lastBodyFrame);
         if (this.lastHandFrame) {
-            var canvas = this.bodyDrawer.canvas;
-            if (handDrawer == null) {
-                handDrawer = new HandGraphic(canvas);
-                handDrawer.setEuler([this.Rx, this.Ry, this.Rz]);
-                handDrawer.setTranslation([this.Tx, this.Ty]);
-                handDrawer.setScale(this.scale);
+            var canvas = this.viewer.canvas;
+            if (handGraphic == null) {
+                handGraphic = new HandGraphic(canvas);
+                handGraphic.setEuler([this.Rx, this.Ry, this.Rz]);
+                handGraphic.setTranslation([this.Tx, this.Ty]);
+                handGraphic.setScale(this.scale);
             }
-            handDrawer.draw(this.lastHandFrame, false);
+            handGraphic.draw(this.lastHandFrame, false);
+            handGraphic.drawTrail(this.handFrames, this);
         }
     }
 
@@ -318,15 +319,12 @@ class Player {
 function update()
 {
     console.log("update");
-    if (handDrawer) {
+    if (handGraphic) {
         var p = player;
-        handDrawer.setProps({
+        handGraphic.setProps({
             euler: [p.Rx, p.Ry, p.Rz],
             translation: [p.Tx, p.Ty],
             scale: p.scale});
-        //handDrawer.setEuler([p.Rx, p.Ry, p.Rz]);
-        //handDrawer.setTranslation([p.Tx, p.Ty]);
-        //handDrawer.setScale([p.scale]);
     }
     player.redraw();
 }
