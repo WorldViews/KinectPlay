@@ -11,6 +11,7 @@ class KinClient {
     }
 
     handleBodyFrame(frame) {
+        //console.log("frame", frame);
         this.lastBodyFrame = frame;
         if (this.poseWatcher)
             this.poseWatcher(frame);
