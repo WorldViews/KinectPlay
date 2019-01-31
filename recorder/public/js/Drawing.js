@@ -282,7 +282,7 @@ class Viewer {
     }
 
     handleLive(frame) {
-        //console.log("handleLive");
+        //console.log("handleLive", frame);
         this.player.redraw();
         for (var bodyIndex = 0; bodyIndex < frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];

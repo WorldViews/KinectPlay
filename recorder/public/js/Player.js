@@ -93,30 +93,42 @@ class Player {
         vj[LHAND] = true;
         this.viewer.bodyGraphic.setVisibleJoints(vj);
         this.kinClient = null;
-        this.runTracker = false;
-        $("#runTracker").click(() => {
-            this.runTracker = $("#runTracker").is(':checked');
-            console.log("runTracker click "+this.runTracker);
-            if (!this.kinClient) {
-                console.log("Getting KinClient");
-                this.kinClient = new KinClient();
-            }
-            if (this.runTracker) {
-                this.kinClient.poseWatcher = () => {
-                    //inst.redraw();
-                    inst.handlePose();
-                };
-            }
-            else {
-                this.kinClient.poseWatcher = null;
-            }
-        });
+        this.useLiveTracker = false;
+        this.showSkels = true;
+        this.showTrails = true;
+
+        $("#useLiveTracker").click(() => inst.updateUseTracker());
+        $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
+        $("#showSkels").click(() => {
+            console.log("showSkels click");
+            inst.showSkels = $("#showSkels").is(':checked');
+        })
         setInterval(() => {inst.tick()}, 50);
+    }
+
+    updateUseTracker()
+    {
+        this.useLiveTracker = $("#useLiveTracker").is(':checked');
+        let inst = this;
+        console.log("useLiveTracker "+this.useLiveTracker);
+        if (!this.kinClient) {
+            console.log("Getting KinClient");
+            this.kinClient = new KinClient();
+        }
+        if (this.useLiveTracker) {
+            this.kinClient.poseWatcher = () => {
+                //inst.redraw();
+                inst.handlePose();
+            };
+        }
+        else {
+            this.kinClient.poseWatcher = null;
+        }    
     }
 
     handlePose() {
         //console.log("new pose");
-        if (this.runTracker && this.kinClient) {
+        if (this.useLiveTracker && this.kinClient) {
             this.viewer.handleLive(this.kinClient.lastBodyFrame);
         }
     }
@@ -133,8 +145,10 @@ class Player {
                 handGraphic.setTranslation([this.Tx, this.Ty]);
                 handGraphic.setScale(this.scale);
             }
-            handGraphic.draw(this.lastHandFrame, false);
-            handGraphic.drawTrail(this.handFrames, this);
+            if (this.showSkels)
+                handGraphic.draw(this.lastHandFrame, false);
+            if (this.showTrails)
+                handGraphic.drawTrail(this.handFrames, this);
         }
     }
 
@@ -352,6 +366,9 @@ $(document).ready(()=> {
     });
 
     var gui = new dat.GUI();
+//    gui.add(player, 'showTrails');
+//    gui.add(player, 'showSkels');
+//   gui.add(player, "useLiveTracker").onChange(() => player.updateUseTracker());
     gui.add(player, 'WT', 0, 100).onChange(update);
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
