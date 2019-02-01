@@ -49,6 +49,7 @@ var HANDLASSOCOLOR = "blue";
 class BodyGraphic {
     constructor(viewer) {
         this.viewer = viewer;
+        this.player = viewer.player;
         this.visibleJoints = null;
         //this.visibleJoints = [RHAND, LHAND];
     }
@@ -109,18 +110,22 @@ class BodyGraphic {
             //ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
             ctx.fillRect(joint.colorX * viewer.width - s / 2.0, joint.colorY * viewer.height - s / 2.0, s, s);
         }
-        //this.drawSkel(body, bodyIndex);
+        if (this.player.fullSkeletons)
+            this.drawSkel(body, bodyIndex, color);
     }
 
-    drawSkel(body, bodyIndex) {
-        this.drawBones(body, ["head", "neck"]);
-        this.drawBones(body, ["neck", "shoulderLeft", "elbowLeft", "handLeft"]);
-        this.drawBones(body, ["neck", "shoulderRight", "elbowRight", "handRight"]);
-        this.drawBones(body, ["neck", "spineShoulder", "spineMid", "spineBase"]);
-        this.drawBones(body, ["handLeft", "handRight"]);
+    drawSkel(body, bodyIndex, color) {
+        this.drawBones(body, ["head", "neck"], color);
+        this.drawBones(body, ["neck", "shoulderLeft", "elbowLeft", "handLeft"], color);
+        this.drawBones(body, ["neck", "shoulderRight", "elbowRight", "handRight"], color);
+        this.drawBones(body, ["neck", "spineShoulder", "spineMid", "spineBase"], color);
+        this.drawBones(body, ["neck", "spineShoulder", "spineMid", "spineBase"], color);
+        this.drawBones(body, ["spineBase", "hipLeft", "kneeLeft", "ankleLeft", "footLeft"], color);
+        this.drawBones(body, ["spineBase", "hipRight", "kneeRight", "ankleRight", "footRight"], color);
+        this.drawBones(body, ["handLeft", "handRight"], "green");
     }
 
-    drawBones(body, jointNames) {
+    drawBones(body, jointNames, color) {
         //console.log("body "+JSON.stringify(body, null, 3));
         var viewer = this.viewer;
         var pts = [];
@@ -135,7 +140,7 @@ class BodyGraphic {
             var pt = [joint.colorX*viewer.width, joint.colorY*viewer.height];
             pts.push(pt);
         }
-        viewer.drawPolyline(pts, 'green');
+        viewer.drawPolyline(pts, color);
     }
 
     drawHand(jointPoint, handColor) {

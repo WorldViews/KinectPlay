@@ -95,6 +95,7 @@ class Player {
         this.kinClient = null;
         this.useLiveTracker = false;
         this.showSkels = true;
+        this.fullSkeletons = true;
         this.showTrails = true;
 
         $("#useLiveTracker").click(() => inst.updateUseTracker());
@@ -380,7 +381,10 @@ $(document).ready(()=> {
     lg.add(player, 'Tx', 0, 1000).onChange(update);
     lg.add(player, 'Ty', 0, 1000).onChange(update);
     lg.add(player, 'scale', 0.5, 2.5).onChange(update);
-    lg.close()
+    lg.close();
+    var kg = gui.addFolder("Kinect");
+    kg.add(player, "fullSkeletons");
+    kg.close();
     gui.close();
     player.gui = gui;
 })

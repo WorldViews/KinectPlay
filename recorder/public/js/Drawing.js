@@ -288,6 +288,7 @@ class Viewer {
             var body = frame.bodies[bodyIndex];
             if (!body.tracked)
                 continue;
+            $("#trackedControlId").html(body.trackingId);
             this.bodyGraphic.drawBody(body, bodyIndex);
             var joint = body.joints[RHAND];
             var pt = [joint.colorX * this.width, joint.colorY * this.height];
