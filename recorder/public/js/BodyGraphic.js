@@ -27,6 +27,10 @@ JointType = {
     thumbRight: 24
 };
 
+var TrackingState_NotTracked = 0;
+var TrackingState_Inferred = 1;
+var TrackingState_Tracked = 2;
+
 var LHAND = 7;
 var RHAND = 11;
 var TRAIL_JOINTS = [RHAND, LHAND];
@@ -135,6 +139,14 @@ class BodyGraphic {
             var joint = body.joints[jointId];
             if (joint == null) {
                 //console.log("No joint for "+jointName);
+                return;
+            }
+            if (joint.trackingState == TrackingState_NotTracked) {
+                console.log("Not Tracked");
+                return;
+            }
+            if (joint.colorX > 1 || joint.colorY > 1) {
+                //console.log("Joint image coord out of range");
                 return;
             }
             var pt = [joint.colorX*viewer.width, joint.colorY*viewer.height];

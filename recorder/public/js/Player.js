@@ -2,6 +2,7 @@
 var defaultRecId = "2019_01_17__15_17_07";
 defaultRecId = null;
 var player = null;
+var viewer = null;
 var kinClient = null;
 var handGraphic = null;
 
@@ -86,6 +87,7 @@ class Player {
         this.recsDir = "/recs/";
         this.currentImage = null;
         this.viewer = new Viewer(this);
+        viewer = this.viewer; // put in global namespace for debugging
         this.pendingLoad = null;
         this.loadCollisions = 0; // times a new image is requested before old one loaded.
         var vj = {};
@@ -171,6 +173,7 @@ class Player {
         this.frameType = "jpg";
         this.frameNum = 0;
         this.numFrames = 0;
+        this.duration = 0;
         this.prevFrameNum = 0;
         this.framesPerSec = 30.0;
         this.bodyFrames = [];
@@ -211,6 +214,7 @@ class Player {
         var v = this.frameNum * 1000 / this.numFrames;
         $("#timeSlider").val(v);
         $("#time").html(sprintf("%.2f", this.getCurrentTime()));
+        $("#duration").html(sprintf("%.2f", this.duration));
     }
 
     loadIndex() {
@@ -253,29 +257,6 @@ class Player {
         this.seekIdx(1);
         this.play();
         this.data = data;
-    }
-
-    loadIndex_() {
-        this.frameNum++;
-        var url = this.recsDir+this.recordingId+"/bodyFrame"+
-            this.frameNum+".json";
-        $("#stats").html("loading: "+url);
-        var inst = this;
-        getJSON(url,
-               (data) => {
-                   //console.log("status: "+this.frameNum+" "+status);
-                   this.numFrames = this.frameNum;
-                   this.bodyFrames[this.frameNum] = data;
-                   inst.loadIndex_();
-               },
-                () => {
-                    console.log("failed ... finished loading index");
-                    this.loading = false;
-                    this.seekIdx(1);
-                    this.play();
-                    $("#sessionName").html(this.recordingId);
-                }
-               );
     }
 
     play() {
@@ -367,9 +348,6 @@ $(document).ready(()=> {
     });
 
     var gui = new dat.GUI();
-//    gui.add(player, 'showTrails');
-//    gui.add(player, 'showSkels');
-//   gui.add(player, "useLiveTracker").onChange(() => player.updateUseTracker());
     gui.add(player, 'WT', 0, 100).onChange(update);
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
@@ -383,7 +361,7 @@ $(document).ready(()=> {
     lg.add(player, 'scale', 0.5, 2.5).onChange(update);
     lg.close();
     var kg = gui.addFolder("Kinect");
-    kg.add(player, "fullSkeletons");
+    kg.add(player, "fullSkeletons").onChange(update);
     kg.close();
     gui.close();
     player.gui = gui;
