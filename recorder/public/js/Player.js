@@ -4,7 +4,6 @@ defaultRecId = null;
 var player = null;
 var viewer = null;
 var kinClient = null;
-var handGraphic = null;
 
 /*
 in the saved JSON file there are lists of joints.  It is saved
@@ -93,7 +92,7 @@ class Player {
         var vj = {};
         vj[RHAND] = true;
         vj[LHAND] = true;
-        this.viewer.bodyGraphic.setVisibleJoints(vj);
+        this.viewer.kinectTracker.setVisibleJoints(vj);
         this.kinClient = null;
         this.useLiveTracker = false;
         this.showSkels = true;
@@ -139,20 +138,7 @@ class Player {
     redraw() {
         this.viewer.resize()
         this.viewer.clearBackground(this.currentImage);
-        this.viewer.draw(this.lastBodyFrame);
-        if (this.lastHandFrame) {
-            var canvas = this.viewer.canvas;
-            if (handGraphic == null) {
-                handGraphic = new HandGraphic(canvas);
-                handGraphic.setEuler([this.Rx, this.Ry, this.Rz]);
-                handGraphic.setTranslation([this.Tx, this.Ty]);
-                handGraphic.setScale(this.scale);
-            }
-            if (this.showSkels)
-                handGraphic.draw(this.lastHandFrame, false);
-            if (this.showTrails)
-                handGraphic.drawTrail(this.handFrames, this);
-        }
+        this.viewer.draw(this.lastBodyFrame, this.lastHandFrame);
     }
 
     setSession(recId, stype) {
@@ -315,9 +301,9 @@ class Player {
 function update()
 {
     console.log("update");
-    if (handGraphic) {
+    if (viewer.leapTracker) {
         var p = player;
-        handGraphic.setProps({
+        viewer.leapTracker.setProps({
             euler: [p.Rx, p.Ry, p.Rz],
             translation: [p.Tx, p.Ty],
             scale: p.scale});

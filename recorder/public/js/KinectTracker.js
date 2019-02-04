@@ -50,9 +50,9 @@ var HANDOPENCOLOR = "green";
 var HANDLASSOCOLOR = "blue";
 
 
-class BodyGraphic {
+class KinectTracker extends HumanBodyTracker {
     constructor(viewer) {
-        this.viewer = viewer;
+        super(viewer);
         this.player = viewer.player;
         this.visibleJoints = null;
         //this.visibleJoints = [RHAND, LHAND];

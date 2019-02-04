@@ -3,6 +3,9 @@ var LHAND = 7;
 var RHAND = 11;
 var TRAIL_JOINTS = [RHAND, LHAND];
 
+var leapTracker;
+var kinectTracker;
+
 class KinTrans
 {
     constructor(viewer) {
@@ -125,7 +128,10 @@ class Viewer {
         this.mousePoint = null;
         console.log("Visible Joints: " + JSON.stringify(this.visibleJoints));
         this.mouseIsDown = false;
-        this.bodyGraphic = new BodyGraphic(this);
+        this.kinectTracker = new KinectTracker(this);
+        kinectTracker = this.kinectTracker;
+        this.leapTracker = this.getLeapTracker();
+        console.log("got leapTracker: ", this.leapTracker);
         this.useColorXY = true;
         //this.useColorXY = false;
         this.kinTrans = new KinTrans(this);
@@ -229,8 +235,30 @@ class Viewer {
         }
     }
 
-    draw(bodyFrame) {
-        this.bodyGraphic.draw(bodyFrame);
+    getLeapTracker() {
+        console.log("*** getLeapTracker ***");
+        if (this.leapTracker)
+            return this.leapTracker;
+        var params = this.player;
+        leapTracker = new LeapTracker(this);
+        leapTracker.setEuler([params.Rx, params.Ry, params.Rz]);
+        leapTracker.setTranslation([params.Tx, params.Ty]);
+        leapTracker.setScale(params.scale);
+        this.leapTracker = leapTracker;
+        return leapTracker;
+    }
+
+    draw(bodyFrame, handFrame) {
+        var player = this.player;
+        this.kinectTracker.draw(bodyFrame);
+        //this.leapTracker.draw(handFrame);
+        if (handFrame) {
+            console.log("handFrame", handFrame);
+            if (player.showSkels)
+                leapTracker.draw(handFrame, false);
+            if (player.showTrails)
+                leapTracker.drawTrail(player.handFrames, player);
+        }
     }
 
     drawPolyline(pts, color) {
@@ -336,7 +364,7 @@ class Viewer {
             if (!body.tracked)
                 continue;
             $("#trackedControlId").html(body.trackingId);
-            this.bodyGraphic.drawBody(body, bodyIndex);
+            this.kinectTracker.drawBody(body, bodyIndex);
             var joint = body.joints[RHAND];
             var pt = [joint.colorX * this.width, joint.colorY * this.height];
             if (this.draggedTrail == null)

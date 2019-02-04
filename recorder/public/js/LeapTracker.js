@@ -1,6 +1,8 @@
 
-class HandGraphic {
-    constructor(canvas) {
+class LeapTracker extends HumanHandTracker {
+    constructor(viewer) {
+        super(viewer);
+        var canvas = viewer.canvas;
         this.canvas = canvas;
         this.xCenter = canvas.width / 2;
         this.yCenter = canvas.height / 2;
