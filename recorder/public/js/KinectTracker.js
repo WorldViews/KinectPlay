@@ -109,7 +109,6 @@ class KinectTracker extends HumanBodyTracker {
             console.log("*** drawBodies no bodyFrame");
             return;
         }
-        //var showTrails = $("#showTrails").is(':checked');
         var viewer = this.viewer;
         var player = viewer.player;
         var showTrails = player.showTrails;
@@ -117,63 +116,105 @@ class KinectTracker extends HumanBodyTracker {
         var fps = player.framesPerSec;
         var framesAhead = Math.round(player.secondsAhead * fps);
         var framesBehind = Math.round(player.secondsBehind * fps);
+        var low = player.frameNum - framesBehind;
+        var high = player.frameNum + framesAhead;
         //console.log("ahead behind: "+framesAhead+" "+framesBehind);
         for (var bodyIndex = 0; bodyIndex < bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
             if (body.tracked) {
-                //this.drawBody(body, bodyIndex);
-                if (showTrails && player) {
-                    for (var i = 0; i < TRAIL_JOINTS.length; i++) {
-                        var joint = TRAIL_JOINTS[i];
-                        var color = colors[i];
-//                      viewer.drawTrail(player.bodyFrames, bodyIndex,
-                        this.drawTrail(player.bodyFrames, bodyIndex,
-                                joint, color,
-                            player.frameNum - framesBehind,
-                            player.frameNum + framesAhead);
-                            this.drawVelocity(player.bodyFrames, bodyIndex, joint, color);
-                    }
-                }
-                if(showSkels)
+                if (showSkels)
                     this.drawBody(body, bodyIndex);
             }
         }
+        if (showTrails) {
+            this.drawTrails(bodyFrame);
+        }
     }
 
-    drawTrail(frames, bodyIdx, jointId, color, low, high) {
+    drawTrails(bodyFrame) {
+        //console.log("drawTrails");
+        this.computeTrails(bodyFrame);
+        for (var trailId in viewer.trails) {
+            var trail = viewer.trails[trailId];
+            this.drawTrail(trail);
+        }
+    }
+
+    drawTrail(trail) {
         var viewer = this.viewer;
-        //console.log("drawTrail "+bodyIdx+" "+jointId);
-        var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
-        var trailId = bodyIdx + "_" + jointId;
-        viewer.trails[trailId] = pts;
-        viewer.trailsLow[trailId] = low;
-        viewer.trailsBodyIdx[trailId] = bodyIdx;
-        viewer.trailsJointId[trailId] = jointId;
-        viewer.drawPolyline(pts, color);
+        viewer.drawPolyline(trail.points, trail.color);
+        this.drawVelocity(trail);
+        //this.drawVelocityFromTrail(trail);
         viewer.drawDrag();
     }
 
-    drawVelocity(frames, bodyIdx, jointId, color, low, high) {
+    drawVelocity(trail) {
         //console.log("drawVector "+bodyIdx+" "+jointId);
         var player = this.player;
+        var frames = player.bodyFrames;
         var i1 = Math.max(player.frameNum - 1, 0);
         var i2 = Math.min(player.frameNum + 1, frames.length - 1);
         //console.log("i1: "+i1+"  i2: "+i2);
         if (i1 == 0) {
             return; // frame indices start at 1
         }
+        var bodyIdx = trail.bodyIdx;
+        var jointId = trail.jointId;
         var f = frames[player.frameNum];
         var f1 = frames[i1];
         var f2 = frames[i2];
         var jt = f.bodies[bodyIdx].joints[jointId];
         var jt1 = f1.bodies[bodyIdx].joints[jointId];
         var jt2 = f2.bodies[bodyIdx].joints[jointId];
-        //var pt = [jt.colorX, jt.colorY];
-        //var pt2 = [jt2.colorX, jt2.colorY];
         var pt = this.kinTrans.getNcpt(jt);
         var pt2 = this.kinTrans.getNcpt(jt2);
         var v = [pt2[0] - pt[0], pt2[1] - pt[1]];
         this.viewer.drawVector(pt, v);
+    }
+
+    drawVelocityFromTrail(trail) {
+        //console.log("drawVector "+bodyIdx+" "+jointId);
+        var player = this.player;
+        var viewer = this.viewer;
+        var i1 = player.frameNum - trail.low - 1;
+        var i2 = player.frameNum - trail.low + 1;
+        if (i1 < 0 || i2 >= trail.points.length) {
+            console.log("i1: "+i1+"  i2: "+i2);
+            return;
+        }
+        var pt = trail.points[player.frameNum - trail.low]
+        var pt1 = trail.points[i1];
+        var pt2 = trail.points[i2];
+        var v = [pt2[0] - pt1[0], pt2[1] - pt1[1]];
+        viewer.drawVectorImage(pt, v);
+    }
+
+    computeTrails(bodyFrame) {
+        if (!bodyFrame) {
+            console.log("*** computeTrails no bodyFrame");
+            return;
+        }
+        var viewer = this.viewer;
+        viewer.trails = {};
+        var player = viewer.player;
+        var fps = player.framesPerSec;
+        var framesAhead = Math.round(player.secondsAhead * fps);
+        var framesBehind = Math.round(player.secondsBehind * fps);
+        var low = player.frameNum - framesBehind;
+        var high = player.frameNum + framesAhead;
+        //console.log("ahead behind: "+framesAhead+" "+framesBehind);
+        for (var bodyIndex = 0; bodyIndex < bodyFrame.bodies.length; bodyIndex++) {
+            var body = bodyFrame.bodies[bodyIndex];
+            if (!body.tracked)
+                continue;
+            for (var i = 0; i < TRAIL_JOINTS.length; i++) {
+                var jointId = TRAIL_JOINTS[i];
+                var trail = this.computeTrail(player.bodyFrames,
+                                        bodyIndex, jointId, low, high);
+                trail.color = colors[i];
+                //this.drawVelocity(player.bodyFrames, bodyIndex, jointId);
+            }
+        }
     }
 
     computeTrail(frames, bodyIdx, jointId, startNum, endNum) {
@@ -196,7 +237,11 @@ class KinectTracker extends HumanBodyTracker {
         }
         for (var j = 0; j < this.player.smoothNum; j++)
             pts = smooth(pts);
-        return pts;
+        var trailId = bodyIdx + "_" + jointId;
+        var trail = {points: pts, trailId, bodyIdx, jointId,
+                     low: startNum, high: endNum};
+        viewer.trails[trailId] = trail;
+        return trail;
     }
 
     drawBody(body, bodyIndex) {

@@ -2,6 +2,7 @@
 class LeapTracker extends HumanHandTracker {
     constructor(viewer) {
         super(viewer);
+        this.player = viewer.player;
         var canvas = viewer.canvas;
         this.canvas = canvas;
         this.xCenter = canvas.width / 2;
@@ -228,17 +229,23 @@ class LeapTracker extends HumanHandTracker {
         }
     }
 
-    drawTrail(frames, player) {
-        var viewer = player.viewer;
+    drawTrails(handFrame) {
+        var frames = this.player.handFrames;
+        this.computeTrails(frames);
+        for (var trailId in viewer.trails) {
+            var trail = viewer.trails[trailId];
+            viewer.drawPolyline(trail.points, 'red');
+        }
+    }
+
+    computeTrails(frames) {
+        var viewer = this.viewer;
+        var player = viewer.player;
         if (!frames) {
             console.log("no frames");
             return;
         }
-        player.trails = {};
-        player.trailsLow = {};
-        player.trailsBodyIdx = {};
-        player.trailsJointId = {};
-
+        viewer.trails = {};
         var n = player.getCurrentIdx();
         var fps = player.framesPerSec;
         var framesAhead = Math.round(player.secondsAhead * fps);
@@ -249,8 +256,6 @@ class LeapTracker extends HumanHandTracker {
             low = 1;
         if (high > frames.length-1)
             high = frames.length -1;
-        //console.log("drawTrail "+n+" "+low+" "+high);
-        //var handIds = [0,1,2];
         var trailId = 0;
         for (var handId=0; handId<3; handId++) {
             var pts = [];
@@ -264,13 +269,12 @@ class LeapTracker extends HumanHandTracker {
             }
             if (pts.length == 0)
                 continue;
-            viewer.drawPolyline(pts, 'red');
-            player.trails[trailId] = pts;
-            player.trailsLow[trailId] = low;
+            var trail = {points: pts, trailId, handId, low, high};                         
+            viewer.trails[trailId] = trail;
             trailId++;
             //console.log("hands trail pts:", pts);
         }
-     }
+    }
 }
 
 function getJointStyle(skStyle, fingerType, fingerJoint) {

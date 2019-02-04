@@ -1,8 +1,4 @@
 
-var LHAND = 7;
-var RHAND = 11;
-var TRAIL_JOINTS = [RHAND, LHAND];
-
 var leapTracker;
 var kinectTracker;
 
@@ -84,9 +80,6 @@ class Viewer {
         this.height = this.canvas.height;
         this.aspectRatio = this.width / (this.height + 0.0);
         this.trails = {};
-        this.trailsLow = {};
-        this.trailsBodyIdx = {};
-        this.trailsJointId = {};
         this.mousePoint = null;
         console.log("Visible Joints: " + JSON.stringify(this.visibleJoints));
         this.mouseIsDown = false;
@@ -112,22 +105,18 @@ class Viewer {
         this.draggedJoint = -1;
         this.draggedBody = -1;
         this.draggedTrail = null;
-        //for (var jointIdx in this.trails) {
         for (var trailId in this.trails) {
-            //var pts = this.trails[jointIdx];
-            var pts = this.trails[trailId];
-            var jointIdx = this.trailsJointId[trailId];
+            var trail = this.trails[trailId];
+            var pts = trail.points;
+            var jointIdx = trail.jointIdx;
             var ret = findNearestPoint(pts, pt);
-            //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
             if (ret.d < 10) {
                 if (jointId >= 0 && jointId != jointIdx)
                     return;
                 this.draggedTrail = trailId;
                 this.draggedJoint = jointIdx;
-                //var n = this.trailsLow[jointIdx] + ret.iMin;
-                //this.draggedBody = this.trailsBodyIdx[jointIdx];
-                var n = this.trailsLow[trailId] + ret.iMin;
-                this.draggedBody = this.trailsBodyIdx[trailId];
+                var n = trail.low + ret.iMin;
+                this.draggedBody = trail.bodyIdx;
                 this.player.seekIdx(n);
             }
         }
@@ -135,9 +124,10 @@ class Viewer {
 
     //dragJoint(jointIdx, pt) {
     dragJoint(trailId, pt) {
-        var jointId = this.trailsJointId[trailId];
-        var pts = this.trails[trailId];
-        var low = this.trailsLow[trailId];
+        var trail = this.trails[trailId];
+        var jointId = trail.jointId;
+        var pts = trail.points;
+        var low = trail.low;
         if (low < 0)
             low = 0;
         var cur = player.frameNum;
@@ -208,20 +198,24 @@ class Viewer {
 
     draw(bodyFrame, handFrame) {
         var player = this.player;
-        this.kinectTracker.draw(bodyFrame);
+        if (bodyFrame) {
+            this.kinectTracker.draw(bodyFrame);
+            if (player.showTrails)
+                this.kinectTracker.drawTrails(bodyFrame);
+        }
+        //this.kinectTracker.draw(bodyFrame);
         //this.leapTracker.draw(handFrame);
         if (handFrame) {
             console.log("handFrame", handFrame);
             if (player.showSkels)
                 leapTracker.draw(handFrame, false);
             if (player.showTrails)
-                leapTracker.drawTrail(player.handFrames, player);
+                leapTracker.drawTrails(player.handFrames);
         }
     }
 
     drawPolyline(pts, color) {
         var ctx = this.ctx;
-
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = color;
         ctx.beginPath();
@@ -244,8 +238,16 @@ class Viewer {
         ctx.stroke();
     }
 
+    // pt and v are in image coordinates
+    drawVectorImage(pt, v) {
+        pt = [pt[0]/viewer.width, pt[1]/viewer.height];
+        v = [v[0]/viewer.width, v[1]/viewer.height];
+        this.drawVector(pt,v);
+    }
+
+    // pt and v are in normalized image coordinates
     drawVector(pt, v) {
-        var L = 1.5;
+            var L = 1.5;
         var pt2 = [pt[0] + L * v[0], pt[1] + L * v[1]];
         var ctx = this.ctx;
         ctx.lineWidth = 3.5;
