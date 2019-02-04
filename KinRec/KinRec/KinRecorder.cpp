@@ -157,8 +157,8 @@ void KinRecorder::run_()
 		//std::string imagePath = recDir + "/" + format("image%d.bmp", frameNum);
 		if (recording) {
 			//saveBodyFrameJSON(frameNum, kinect);
-			//trailRec->update();
-			trailRec->update(trackedJoints);
+			trailRec->update();
+			//trailRec->update(trackedJoints);
 			cv::imwrite(imagePath, kinect.rgbImage);
 		}
 		draw();
