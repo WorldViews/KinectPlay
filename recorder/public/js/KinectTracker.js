@@ -49,12 +49,54 @@ var HANDOPENCOLOR = "green";
 // lasso hand state color
 var HANDLASSOCOLOR = "blue";
 
+class KinTrans
+{
+    constructor(tracker) {
+        this.tracker = tracker;
+        this.viewer = tracker.viewer;
+        this.useColorXY = true;
+        //this.useColorXY = false;
+        this.T = {
+            cx: 959.5,
+            cy:539.5,
+            fx: 1081.37,
+            fy: 1081.37
+        };
+    }
+
+    // get normalized color image coordinates
+    getNcpt(joint) {
+        if (this.useColorXY) {
+            return [joint.colorX, joint.colorY];
+        }
+        else {
+            var T = this.T;
+       // https://stackoverflow.com/questions/47348266/color-space-to-camera-space-transformation-matrix
+            var z = joint.cameraZ;
+            //var ix = (T.fx*joint.cameraX + T.cx)/z;
+            //var iy = (T.fy*joint.cameraY + T.cy)/z;
+            //var ix = (T.fx*joint.cameraX/z + T.cx);
+            //var iy = (T.fy*joint.cameraY/z + T.cy);
+            //var ix = T.fx*(joint.cameraX/z + T.cx);
+            //var iy = T.fy*(joint.cameraY/z + T.cy);
+            //var ix = (T.fx*joint.cameraX + T.cx);
+            //var iy = (T.fy*joint.cameraY + T.cy);
+            var ix = (T.fx*joint.cameraX + T.cx*z)/z;
+            var iy = (T.fy*joint.cameraY + T.cy*z)/z;
+            return [ix/this.viewer.width, iy/this.viewer.height];
+       }
+    }
+}
+
+var kinTrans = null;
 
 class KinectTracker extends HumanBodyTracker {
     constructor(viewer) {
         super(viewer);
         this.player = viewer.player;
         this.visibleJoints = null;
+        this.kinTrans = new KinTrans(this);
+        kinTrans = this.kinTrans;
         //this.visibleJoints = [RHAND, LHAND];
     }
 
@@ -84,17 +126,77 @@ class KinectTracker extends HumanBodyTracker {
                     for (var i = 0; i < TRAIL_JOINTS.length; i++) {
                         var joint = TRAIL_JOINTS[i];
                         var color = colors[i];
-                        viewer.drawTrail(player.bodyFrames, bodyIndex,
-                            joint, color,
+//                      viewer.drawTrail(player.bodyFrames, bodyIndex,
+                        this.drawTrail(player.bodyFrames, bodyIndex,
+                                joint, color,
                             player.frameNum - framesBehind,
                             player.frameNum + framesAhead);
-                            viewer.drawVelocity(player.bodyFrames, bodyIndex, joint, color);
+                            this.drawVelocity(player.bodyFrames, bodyIndex, joint, color);
                     }
                 }
                 if(showSkels)
                     this.drawBody(body, bodyIndex);
             }
         }
+    }
+
+    drawTrail(frames, bodyIdx, jointId, color, low, high) {
+        var viewer = this.viewer;
+        //console.log("drawTrail "+bodyIdx+" "+jointId);
+        var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
+        var trailId = bodyIdx + "_" + jointId;
+        viewer.trails[trailId] = pts;
+        viewer.trailsLow[trailId] = low;
+        viewer.trailsBodyIdx[trailId] = bodyIdx;
+        viewer.trailsJointId[trailId] = jointId;
+        viewer.drawPolyline(pts, color);
+        viewer.drawDrag();
+    }
+
+    drawVelocity(frames, bodyIdx, jointId, color, low, high) {
+        //console.log("drawVector "+bodyIdx+" "+jointId);
+        var player = this.player;
+        var i1 = Math.max(player.frameNum - 1, 0);
+        var i2 = Math.min(player.frameNum + 1, frames.length - 1);
+        //console.log("i1: "+i1+"  i2: "+i2);
+        if (i1 == 0) {
+            return; // frame indices start at 1
+        }
+        var f = frames[player.frameNum];
+        var f1 = frames[i1];
+        var f2 = frames[i2];
+        var jt = f.bodies[bodyIdx].joints[jointId];
+        var jt1 = f1.bodies[bodyIdx].joints[jointId];
+        var jt2 = f2.bodies[bodyIdx].joints[jointId];
+        //var pt = [jt.colorX, jt.colorY];
+        //var pt2 = [jt2.colorX, jt2.colorY];
+        var pt = this.kinTrans.getNcpt(jt);
+        var pt2 = this.kinTrans.getNcpt(jt2);
+        var v = [pt2[0] - pt[0], pt2[1] - pt[1]];
+        this.viewer.drawVector(pt, v);
+    }
+
+    computeTrail(frames, bodyIdx, jointId, startNum, endNum) {
+        //console.log("computeTrail "+bodyIdx+" "+jointId+" "+startNum+" "+endNum);
+        var viewer = this.viewer;
+        var pts = [];
+        for (var i = startNum; i < endNum; i++) {
+            if (i < 1 || i > frames.length)
+                continue;
+            var frame = frames[i];
+            if (!frame) {
+                console.log("No frame for i: " + i);
+                continue;
+            }
+            var body = frame.bodies[bodyIdx];
+            var joint = body.joints[jointId];
+            //pts.push([joint.colorX * this.width, joint.colorY * this.height]);
+            var pt = this.kinTrans.getNcpt(joint);
+            pts.push([pt[0] * viewer.width, pt[1] * viewer.height]);
+        }
+        for (var j = 0; j < this.player.smoothNum; j++)
+            pts = smooth(pts);
+        return pts;
     }
 
     drawBody(body, bodyIndex) {
@@ -183,6 +285,8 @@ class KinectTracker extends HumanBodyTracker {
                 break;
         }
     }
+
+
 }
 
 

@@ -6,44 +6,6 @@ var TRAIL_JOINTS = [RHAND, LHAND];
 var leapTracker;
 var kinectTracker;
 
-class KinTrans
-{
-    constructor(viewer) {
-        this.viewer = viewer;
-        this.T = {
-            cx: 959.5,
-            cy:539.5,
-            fx: 1081.37,
-            fy: 1081.37
-        };
-    }
-
-    // get normalized color image coordinates
-    getNcpt(joint) {
-        if (this.viewer.useColorXY) {
-            return [joint.colorX, joint.colorY];
-        }
-        else {
-            var T = this.T;
-       // https://stackoverflow.com/questions/47348266/color-space-to-camera-space-transformation-matrix
-            var z = joint.cameraZ;
-            //var ix = (T.fx*joint.cameraX + T.cx)/z;
-            //var iy = (T.fy*joint.cameraY + T.cy)/z;
-            //var ix = (T.fx*joint.cameraX/z + T.cx);
-            //var iy = (T.fy*joint.cameraY/z + T.cy);
-            //var ix = T.fx*(joint.cameraX/z + T.cx);
-            //var iy = T.fy*(joint.cameraY/z + T.cy);
-            //var ix = (T.fx*joint.cameraX + T.cx);
-            //var iy = (T.fy*joint.cameraY + T.cy);
-            var ix = (T.fx*joint.cameraX + T.cx*z)/z;
-            var iy = (T.fy*joint.cameraY + T.cy*z)/z;
-            return [ix/this.viewer.width, iy/this.viewer.height];
-       }
-    }
-}
-
-var kinTrans = null;
-
 function dist2(pt1, pt2) {
     var dx = pt1[0] - pt2[0];
     var dy = pt1[1] - pt2[1];
@@ -132,10 +94,6 @@ class Viewer {
         kinectTracker = this.kinectTracker;
         this.leapTracker = this.getLeapTracker();
         console.log("got leapTracker: ", this.leapTracker);
-        this.useColorXY = true;
-        //this.useColorXY = false;
-        this.kinTrans = new KinTrans(this);
-        kinTrans = this.kinTrans;
         $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
         $("#bodyCanvas").mousedown(e => inst.onMouseDown(e));
         $("#bodyCanvas").mouseup(e => inst.onMouseUp(e));
@@ -274,28 +232,6 @@ class Viewer {
         ctx.stroke();
     }
 
-    computeTrail(frames, bodyIdx, jointId, startNum, endNum) {
-        //console.log("computeTrail "+bodyIdx+" "+jointId+" "+startNum+" "+endNum);
-        var pts = [];
-        for (var i = startNum; i < endNum; i++) {
-            if (i < 1 || i > frames.length)
-                continue;
-            var frame = frames[i];
-            if (!frame) {
-                console.log("No frame for i: " + i);
-                continue;
-            }
-            var body = frame.bodies[bodyIdx];
-            var joint = body.joints[jointId];
-            //pts.push([joint.colorX * this.width, joint.colorY * this.height]);
-            var pt = this.kinTrans.getNcpt(joint);
-            pts.push([pt[0] * this.width, pt[1] * this.height]);
-        }
-        for (var j = 0; j < this.player.smoothNum; j++)
-            pts = smooth(pts);
-        return pts;
-    }
-
     drawDrag() {
         if (!this.controlPoint || !this.nearestPoint)
             return;
@@ -306,42 +242,6 @@ class Viewer {
         ctx.moveTo(this.nearestPoint[0], this.nearestPoint[1]);
         ctx.lineTo(this.controlPoint[0], this.controlPoint[1]);
         ctx.stroke();
-    }
-
-    drawTrail(frames, bodyIdx, jointId, color, low, high) {
-        //console.log("drawTrail "+bodyIdx+" "+jointId);
-        var pts = this.computeTrail(frames, bodyIdx, jointId, low, high);
-        var trailId = bodyIdx + "_" + jointId;
-        this.trails[trailId] = pts;
-        this.trailsLow[trailId] = low;
-        this.trailsBodyIdx[trailId] = bodyIdx;
-        this.trailsJointId[trailId] = jointId;
-        this.drawPolyline(pts, color);
-        this.drawDrag();
-    }
-
-
-    drawVelocity(frames, bodyIdx, jointId, color, low, high) {
-        //console.log("drawVector "+bodyIdx+" "+jointId);
-        var player = this.player;
-        var i1 = Math.max(player.frameNum - 1, 0);
-        var i2 = Math.min(player.frameNum + 1, frames.length - 1);
-        //console.log("i1: "+i1+"  i2: "+i2);
-        if (i1 == 0) {
-            return; // frame indices start at 1
-        }
-        var f = frames[player.frameNum];
-        var f1 = frames[i1];
-        var f2 = frames[i2];
-        var jt = f.bodies[bodyIdx].joints[jointId];
-        var jt1 = f1.bodies[bodyIdx].joints[jointId];
-        var jt2 = f2.bodies[bodyIdx].joints[jointId];
-        //var pt = [jt.colorX, jt.colorY];
-        //var pt2 = [jt2.colorX, jt2.colorY];
-        var pt = this.kinTrans.getNcpt(jt);
-        var pt2 = this.kinTrans.getNcpt(jt2);
-        var v = [pt2[0] - pt[0], pt2[1] - pt[1]];
-        this.drawVector(pt, v);
     }
 
     drawVector(pt, v) {
