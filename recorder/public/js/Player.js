@@ -68,6 +68,24 @@ function loadSessions()
     });
 }
 
+function frameStats(frames)
+{
+    var prevT = null;
+    var dtVec = [];
+    for (var i=1; i<frames.length; i++) {
+        var frame = frames[i];
+        var t = frame.frameTime;
+        if (prevT) {
+            var dt = t - prevT;
+            dtVec.push(dt);
+        }
+        prevT = t;
+    }
+    dtVec.sort((a,b) => { return a-b; });
+    console.log("dtVec: ", dtVec);
+    return dtVec;
+}
+
 class Player {
     constructor(recId) {
         this.setSession(recId);
