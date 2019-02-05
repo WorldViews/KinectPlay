@@ -116,6 +116,7 @@ class Player {
         this.showSkels = true;
         this.fullSkeletons = true;
         this.showTrails = true;
+        this.controlJoint = "LeftHand";
 
         $("#useLiveTracker").click(() => inst.updateUseTracker());
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -149,7 +150,7 @@ class Player {
     handlePose() {
         //console.log("new pose");
         if (this.useLiveTracker && this.kinClient) {
-            this.viewer.handleLive(this.kinClient.lastBodyFrame);
+            this.viewer.handleKinectLive(this.kinClient.lastBodyFrame);
         }
     }
 
@@ -163,6 +164,9 @@ class Player {
         console.log("setSession "+recId+" "+stype);
         if (recId == null)
             return;
+        if (stype == null) {
+            stype = "body";
+        }
         if (stype == "body")
             this.recsDir = "/recs/";
         else if (stype == "hand")
@@ -366,6 +370,7 @@ $(document).ready(()=> {
     lg.close();
     var kg = gui.addFolder("Kinect");
     kg.add(player, "fullSkeletons").onChange(update);
+    kg.add(player, "controlJoint", ["LeftHand", "RightHand", "BothHands"]).onChange(update);
     kg.close();
     gui.close();
     player.gui = gui;

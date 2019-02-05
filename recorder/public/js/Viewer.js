@@ -101,10 +101,11 @@ class Viewer {
         this.findDraggedJoint(pt, -1);
     }
 
-    findDraggedJoint(pt, jointId) {
+    findDraggedJoint(pt, controlJointIds) {
         this.draggedJoint = -1;
         this.draggedBody = -1;
         this.draggedTrail = null;
+        var jointId = controlJointIds[0];
         for (var trailId in this.trails) {
             var trail = this.trails[trailId];
             var pts = trail.points;
@@ -258,19 +259,29 @@ class Viewer {
         ctx.stroke();
     }
 
-    handleLive(frame) {
-        //console.log("handleLive", frame);
+    handleKinectLive(frame) {
+        //console.log("handleKinectLive", frame);
         this.player.redraw();
+        var controlJoints = {
+            LeftHand: [LHAND],
+            RightHand: [RHAND],
+            BothHands: [LHAND,RHAND]
+        }[player.controlJoint];
+        if (!controlJoints) {
+            console.log("No controlJoints");
+            return;
+        }
+        console.log("controlJoints", controlJoints);
         for (var bodyIndex = 0; bodyIndex < frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];
             if (!body.tracked)
                 continue;
             $("#trackedControlId").html(body.trackingId);
             this.kinectTracker.drawBody(body, bodyIndex);
-            var joint = body.joints[RHAND];
+            var joint = body.joints[controlJoints[0]];
             var pt = [joint.colorX * this.width, joint.colorY * this.height];
             if (this.draggedTrail == null)
-                this.findDraggedJoint(pt, RHAND);
+                this.findDraggedJoint(pt, controlJoints);
             if (this.draggedTrail) {
                 this.controlPoint = pt;
                 var ret = this.dragJoint(this.draggedTrail, pt);
