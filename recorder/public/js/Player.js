@@ -93,7 +93,7 @@ class Player {
         this.framesPerSec = 30.0;
         this.secondsBehind = 1;
         this.secondsAhead = 1;
-        this.smoothNum = 1;
+        this.smoothNum = 7;
         this.Rx = 180;
         this.Ry = 0;
         this.Rz = 0;
@@ -118,6 +118,7 @@ class Player {
         this.showRecordedSkeletons = true;
         this.showTrails = true;
         this.controlMode = "RightHand";
+        this.speed = 1.0;
 
         //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -218,6 +219,10 @@ class Player {
 
     getCurrentTime() {
         return this.frameNum / this.framesPerSec;
+    }
+    
+    seekTime(t) {
+        this.frameNum = t*this.framesPerSec;
     }
     
     showTime() {
@@ -379,7 +384,7 @@ $(document).ready(()=> {
     gui.add(player, 'WT', 0, 100).onChange(update);
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
-    gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7]).onChange(update);
+    gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
     var lg = gui.addFolder("Leap");
     lg.add(player, 'Rx', 0, 360).onChange(update);
     lg.add(player, 'Ry', 0, 360).onChange(update);
