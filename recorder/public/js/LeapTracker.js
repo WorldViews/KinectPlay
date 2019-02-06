@@ -1,6 +1,6 @@
 
 class LeapTracker extends HumanHandTracker {
-    constructor(viewer) {
+    constructor(viewer, params) {
         super(viewer);
         this.player = viewer.player;
         var canvas = viewer.canvas;
@@ -12,7 +12,11 @@ class LeapTracker extends HumanHandTracker {
         this.setEuler([180, 0, 0]);
         this.setTranslation([canvas.width / 2, canvas.height / 2]);
         this.setScale(1.7);
+        if (params) {
+            this.setProps(params);
+        }
     }
+
 
     setProps(p) {
         if (p.scale) {

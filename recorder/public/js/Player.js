@@ -114,22 +114,25 @@ class Player {
         this.kinClient = null;
         this.useLiveTracker = false;
         this.showSkels = true;
-        this.fullSkeletons = true;
+        this.showLiveSkeletons = true;
+        this.showRecordedSkeletons = true;
         this.showTrails = true;
-        this.controlJoint = "LeftHand";
+        this.controlMode = "RightHand";
 
-        $("#useLiveTracker").click(() => inst.updateUseTracker());
+        //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
         $("#showSkels").click(() => {
             console.log("showSkels click");
             inst.showSkels = $("#showSkels").is(':checked');
+            update();
         })
         setInterval(() => {inst.tick()}, 50);
     }
 
-    updateUseTracker()
+    setUseTracker(val)
     {
-        this.useLiveTracker = $("#useLiveTracker").is(':checked');
+//        this.useLiveTracker = $("#useLiveTracker").is(':checked');
+        this.useLiveTracker = val;
         let inst = this;
         console.log("useLiveTracker "+this.useLiveTracker);
         if (!this.kinClient) {
@@ -138,20 +141,24 @@ class Player {
         }
         if (this.useLiveTracker) {
             this.kinClient.poseWatcher = () => {
-                //inst.redraw();
                 inst.handlePose();
             };
         }
         else {
             this.kinClient.poseWatcher = null;
+            this.liveBodyFrame = null;
         }    
     }
 
     handlePose() {
         //console.log("new pose");
         if (this.useLiveTracker && this.kinClient) {
-            this.viewer.handleKinectLive(this.kinClient.lastBodyFrame);
+            this.liveBodyFrame = this.kinClient.lastBodyFrame;
         }
+        else {
+            this.liveBodyFrame = null;           
+        }
+        this.redraw();
     }
 
     redraw() {
@@ -333,6 +340,13 @@ function update()
     player.redraw();
 }
 
+function updateControls()
+{
+    player.setUseTracker(player.controlMode != "Off");
+    player.viewer.resetControls();
+    update();
+}
+
 $(document).ready(()=> {
     console.log("************READY**********");
     var recId = getParameterByName("recId");
@@ -349,6 +363,12 @@ $(document).ready(()=> {
         var i = Math.round(rt*player.numFrames);
         player.seekIdx(i);
     });
+    $("#controlMode").click(() => {
+        var mode = $("#controlMode").val();
+        player.controlMode = mode;
+        console.log("mode: "+mode);
+        updateControls();
+     })
     //loadSessions();
     $(window).resize(e => {
         //console.log("window.resize");
@@ -369,8 +389,8 @@ $(document).ready(()=> {
     lg.add(player, 'scale', 0.5, 2.5).onChange(update);
     lg.close();
     var kg = gui.addFolder("Kinect");
-    kg.add(player, "fullSkeletons").onChange(update);
-    kg.add(player, "controlJoint", ["LeftHand", "RightHand", "BothHands"]).onChange(update);
+    kg.add(player, "showSkels").onChange(update);
+//    kg.add(player, "controlMode", ["LeftHand", "RightHand", "BothHands"]).onChange(updateControls);
     kg.close();
     gui.close();
     player.gui = gui;

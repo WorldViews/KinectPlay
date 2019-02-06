@@ -22,6 +22,15 @@ function smooth(pts) {
     return npts;
 }
 
+function getColor(e)
+{
+//    return sprintf("#0000%02x", Math.floor(e*e));
+    var cstr = sprintf("hsla(360,80%%,%f%%,.7)", e/10.0);
+    //console.log("color "+cstr);
+    return cstr;
+//    return "#0000"+
+}
+
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return [evt.clientX - rect.left, evt.clientY - rect.top];
@@ -86,36 +95,43 @@ class Viewer {
         this.kinectTracker = new KinectTracker(this);
         kinectTracker = this.kinectTracker;
         this.leapTracker = this.getLeapTracker();
+        this.controlPoints = [];
         console.log("got leapTracker: ", this.leapTracker);
         $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
         $("#bodyCanvas").mousedown(e => inst.onMouseDown(e));
         $("#bodyCanvas").mouseup(e => inst.onMouseUp(e));
     }
 
+    resetControls() {
+        this.controlPoints = [];
+    }
 
     onMouseDown(e) {
         console.log("mouseDown");
         var pt = getMousePos(this.canvas, e);
         this.mouseIsDown = true;
         this.mousePoint = pt;
-        this.findDraggedJoint(pt, -1);
+        this.controlPoints = [{pt, jointId: -1, name: "mouse"}];
+        this.findDraggedJoint(this.controlPoints);
     }
 
-    findDraggedJoint(pt, controlJointIds) {
+    findDraggedJoint(controlPoints) {
+        var pt = controlPoints[0].pt;
+        var controlJointId = controlPoints[0].jointId;
         this.draggedJoint = -1;
         this.draggedBody = -1;
         this.draggedTrail = null;
-        var jointId = controlJointIds[0];
         for (var trailId in this.trails) {
             var trail = this.trails[trailId];
             var pts = trail.points;
-            var jointIdx = trail.jointIdx;
+            var jointId = trail.jointId;
             var ret = findNearestPoint(pts, pt);
             if (ret.d < 10) {
-                if (jointId >= 0 && jointId != jointIdx)
+                console.log("findDrag "+jointId+" "+controlJointId);
+                if (controlJointId >= 0 && controlJointId != jointId)
                     return;
                 this.draggedTrail = trailId;
-                this.draggedJoint = jointIdx;
+                this.draggedJoint = jointId;
                 var n = trail.low + ret.iMin;
                 this.draggedBody = trail.bodyIdx;
                 this.player.seekIdx(n);
@@ -124,7 +140,8 @@ class Viewer {
     }
 
     //dragJoint(jointIdx, pt) {
-    dragJoint(trailId, pt) {
+    dragJoint(trailId, controlPoint) {
+        var pt = controlPoint.pt;
         var trail = this.trails[trailId];
         var jointId = trail.jointId;
         var pts = trail.points;
@@ -133,11 +150,12 @@ class Viewer {
             low = 0;
         var cur = player.frameNum;
         var ret = findBestPoint(pts, pt, low, cur, player.WT);
+        controlPoint.energy = ret.d;
         this.nearestPoint = ret.pt;
         //console.log("nearest "+jointIdx+" "+JSON.stringify(ret));
         var n = low + ret.iMin;
         //console.log("low "+low+" iMin "+ret.iMin+"  n: "+n);
-        this.player.redraw();
+        //this.player.redraw();
         this.player.seekIdx(n);
         return ret;
     }
@@ -148,19 +166,20 @@ class Viewer {
         if (!this.mouseIsDown)
             return;
         this.mousePoint = pt;
-        this.controlPoint = pt;
+        this.controlPoints = [{pt, jointId: -1, name: "mouse"}];
         //console.log("mouseDrag "+pt);
         //if (this.draggedJoint >= 0)
         //    this.dragJoint(this.draggedJoint, pt);
         if (this.draggedTrail)
-            this.dragJoint(this.draggedTrail, pt);
+            this.dragJoint(this.draggedTrail, this.controlPoints[0]);
     }
 
     onMouseUp(e) {
         console.log("mouseUp");
         this.mouseIsDown = false;
         this.mousePoint = null;
-        this.controlPoint = null;
+        this.controlPoints = [];
+        this.player.redraw();
     }
 
     resize() {
@@ -170,7 +189,7 @@ class Viewer {
         //console.log("w: "+this.width);
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        //        this.canvas.height = window.innerHeight;
+        //this.canvas.height = window.innerHeight;
     }
 
     clearBackground(img) {
@@ -189,10 +208,7 @@ class Viewer {
         if (this.leapTracker)
             return this.leapTracker;
         var params = this.player;
-        leapTracker = new LeapTracker(this);
-        leapTracker.setEuler([params.Rx, params.Ry, params.Rz]);
-        leapTracker.setTranslation([params.Tx, params.Ty]);
-        leapTracker.setScale(params.scale);
+        leapTracker = new LeapTracker(this, params);
         this.leapTracker = leapTracker;
         return leapTracker;
     }
@@ -200,12 +216,8 @@ class Viewer {
     draw(bodyFrame, handFrame) {
         var player = this.player;
         if (bodyFrame) {
-            this.kinectTracker.draw(bodyFrame);
-            if (player.showTrails)
-                this.kinectTracker.drawTrails(bodyFrame);
+            this.kinectTracker.draw(bodyFrame, player);
         }
-        //this.kinectTracker.draw(bodyFrame);
-        //this.leapTracker.draw(handFrame);
         if (handFrame) {
             console.log("handFrame", handFrame);
             if (player.showSkels)
@@ -213,6 +225,10 @@ class Viewer {
             if (player.showTrails)
                 leapTracker.drawTrails(player.handFrames);
         }
+        if (player.liveBodyFrame) {
+            this.handleLiveBodies(player.liveBodyFrame);
+        }
+        this.drawControl();
     }
 
     drawPolyline(pts, color) {
@@ -227,18 +243,7 @@ class Viewer {
         ctx.stroke();
     }
 
-    drawDrag() {
-        if (!this.controlPoint || !this.nearestPoint)
-            return;
-        var ctx = this.ctx;
-        ctx.lineWidth = 3.5;
-        ctx.strokeStyle = 'pink';
-        ctx.beginPath();
-        ctx.moveTo(this.nearestPoint[0], this.nearestPoint[1]);
-        ctx.lineTo(this.controlPoint[0], this.controlPoint[1]);
-        ctx.stroke();
-    }
-
+    
     // pt and v are in image coordinates
     drawVectorImage(pt, v) {
         pt = [pt[0]/viewer.width, pt[1]/viewer.height];
@@ -247,11 +252,11 @@ class Viewer {
     }
 
     // pt and v are in normalized image coordinates
-    drawVector(pt, v) {
-            var L = 1.5;
+    drawVector(pt, v, L) {
+        var L = L || 10.0;
         var pt2 = [pt[0] + L * v[0], pt[1] + L * v[1]];
         var ctx = this.ctx;
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 5.5;
         ctx.strokeStyle = 'purple';
         ctx.beginPath();
         ctx.moveTo(this.width * pt[0], this.height * pt[1]);
@@ -259,37 +264,65 @@ class Viewer {
         ctx.stroke();
     }
 
-    handleKinectLive(frame) {
+    drawControl() {
+        this.controlPoints.forEach(control => {
+            this.drawControlPoint(control, control.jointId);
+        });
+    }
+
+    drawControlPoint(control, jointId) {
+        var pt = control.pt;
+        var color = 'red';
+        if (control.energy)
+            color = getColor(control.energy);
+        var ctx = this.ctx;
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(pt[0], pt[1], 8, 0, 2 * Math.PI, true);
+        ctx.fill();    
+        if (this.nearestPoint) {
+            ctx.moveTo(this.nearestPoint[0], this.nearestPoint[1]);
+            ctx.lineTo(pt[0], pt[1]);            
+        }
+        ctx.stroke();
+    }
+
+    handleLiveBodies(frame) {
         //console.log("handleKinectLive", frame);
-        this.player.redraw();
+       // this.player.redraw();
+        this.controlPoints = [];
         var controlJoints = {
             LeftHand: [LHAND],
             RightHand: [RHAND],
             BothHands: [LHAND,RHAND]
-        }[player.controlJoint];
+        }[player.controlMode];
         if (!controlJoints) {
             console.log("No controlJoints");
             return;
         }
-        console.log("controlJoints", controlJoints);
+        //console.log("controlJoints", controlJoints);
         for (var bodyIndex = 0; bodyIndex < frame.bodies.length; bodyIndex++) {
             var body = frame.bodies[bodyIndex];
             if (!body.tracked)
                 continue;
             $("#trackedControlId").html(body.trackingId);
             this.kinectTracker.drawBody(body, bodyIndex);
-            var joint = body.joints[controlJoints[0]];
-            var pt = [joint.colorX * this.width, joint.colorY * this.height];
+            for (var j=0; j< controlJoints.length; j++) {
+                var controlJointId = controlJoints[j];
+                var joint = body.joints[controlJointId];
+                var pt = [joint.colorX * this.width, joint.colorY * this.height];
+                this.controlPoints[j] = {jointId: controlJointId, pt, name:"foo"};
+            }
             if (this.draggedTrail == null)
-                this.findDraggedJoint(pt, controlJoints);
+                this.findDraggedJoint(this.controlPoints);
             if (this.draggedTrail) {
-                this.controlPoint = pt;
-                var ret = this.dragJoint(this.draggedTrail, pt);
+                var ret = this.dragJoint(this.draggedTrail, this.controlPoints[0]);
                 if (ret.d > 200) {
                     console.log("break dragging");
                     this.draggedTrail = null;
                     this.draggedJoint = -1;
-                    this.controlPoint = null;
                 }
             }
         }

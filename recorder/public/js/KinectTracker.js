@@ -104,29 +104,19 @@ class KinectTracker extends HumanBodyTracker {
         this.visibleJoints = joints;
     }
 
-    draw(bodyFrame) {
+    draw(bodyFrame, opts) {
         if (!bodyFrame) {
             console.log("*** drawBodies no bodyFrame");
             return;
         }
-        var viewer = this.viewer;
-        var player = viewer.player;
-        var showTrails = player.showTrails;
-        var showSkels = player.showSkels;
-        var fps = player.framesPerSec;
-        var framesAhead = Math.round(player.secondsAhead * fps);
-        var framesBehind = Math.round(player.secondsBehind * fps);
-        var low = player.frameNum - framesBehind;
-        var high = player.frameNum + framesAhead;
-        //console.log("ahead behind: "+framesAhead+" "+framesBehind);
         for (var bodyIndex = 0; bodyIndex < bodyFrame.bodies.length; bodyIndex++) {
             var body = bodyFrame.bodies[bodyIndex];
             if (body.tracked) {
-                if (showSkels)
+                //if (opts.showSkels)
                     this.drawBody(body, bodyIndex);
             }
         }
-        if (showTrails) {
+        if (opts.showTrails) {
             this.drawTrails(bodyFrame);
         }
     }
@@ -143,9 +133,8 @@ class KinectTracker extends HumanBodyTracker {
     drawTrail(trail) {
         var viewer = this.viewer;
         viewer.drawPolyline(trail.points, trail.color);
-        this.drawVelocity(trail);
-        //this.drawVelocityFromTrail(trail);
-        viewer.drawDrag();
+        //this.drawVelocity(trail);
+        this.drawVelocityFromTrail(trail);
     }
 
     drawVelocity(trail) {
@@ -179,7 +168,7 @@ class KinectTracker extends HumanBodyTracker {
         var i1 = player.frameNum - trail.low - 1;
         var i2 = player.frameNum - trail.low + 1;
         if (i1 < 0 || i2 >= trail.points.length) {
-            console.log("i1: "+i1+"  i2: "+i2);
+            //console.log("i1: "+i1+"  i2: "+i2);
             return;
         }
         var pt = trail.points[player.frameNum - trail.low]
@@ -212,7 +201,6 @@ class KinectTracker extends HumanBodyTracker {
                 var trail = this.computeTrail(player.bodyFrames,
                                         bodyIndex, jointId, low, high);
                 trail.color = colors[i];
-                //this.drawVelocity(player.bodyFrames, bodyIndex, jointId);
             }
         }
     }
@@ -231,8 +219,7 @@ class KinectTracker extends HumanBodyTracker {
             }
             var body = frame.bodies[bodyIdx];
             var joint = body.joints[jointId];
-            //pts.push([joint.colorX * this.width, joint.colorY * this.height]);
-            var pt = this.kinTrans.getNcpt(joint);
+             var pt = this.kinTrans.getNcpt(joint);
             pts.push([pt[0] * viewer.width, pt[1] * viewer.height]);
         }
         for (var j = 0; j < this.player.smoothNum; j++)
@@ -261,7 +248,7 @@ class KinectTracker extends HumanBodyTracker {
             //ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
             ctx.fillRect(joint.colorX * viewer.width - s / 2.0, joint.colorY * viewer.height - s / 2.0, s, s);
         }
-        if (this.player.fullSkeletons)
+        if (this.player.showSkels)
             this.drawSkel(body, bodyIndex, color);
     }
 
@@ -273,7 +260,7 @@ class KinectTracker extends HumanBodyTracker {
         this.drawBones(body, ["neck", "spineShoulder", "spineMid", "spineBase"], color);
         this.drawBones(body, ["spineBase", "hipLeft", "kneeLeft", "ankleLeft", "footLeft"], color);
         this.drawBones(body, ["spineBase", "hipRight", "kneeRight", "ankleRight", "footRight"], color);
-        this.drawBones(body, ["handLeft", "handRight"], "green");
+        //this.drawBones(body, ["handLeft", "handRight"], "green");
     }
 
     drawBones(body, jointNames, color) {
