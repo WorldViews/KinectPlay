@@ -11,6 +11,13 @@ getParameterByName = function(name, defaultVal) {
     return val;
 }
 
+getFloatParameterByName = function(name, defaultVal) {
+    var val = getParameterByName(name, defaultVal);
+    if (val != null)
+        return parseFloat(val);
+    return val;
+}
+
 function getClockTime()
 {
     return new Date().getTime()/1000.0;

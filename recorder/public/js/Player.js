@@ -118,7 +118,10 @@ class Player {
         this.showRecordedSkeletons = true;
         this.showTrails = true;
         this.controlMode = "RightHand";
-        this.speed = 1.0;
+        this.playSpeed = 1.0;
+        this.playTime = 0;
+        this.prevPlayTime = 0;
+        this.prevClockTime = getClockTime();
 
         //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -168,7 +171,7 @@ class Player {
         this.viewer.draw(this.lastBodyFrame, this.lastHandFrame);
     }
 
-    setSession(recId, stype) {
+    setSession(recId, stype, callback) {
         console.log("setSession "+recId+" "+stype);
         if (recId == null)
             return;
@@ -198,31 +201,53 @@ class Player {
         this.lastHandFrame = null;
         this.loadIndex();
         this.playing = false;
+        this.sessionCallback = callback;
     }
 
-    seekIdx_(idx) {
+    seekIdx(idx) {
         if (idx <= 0)
             idx = 1;
         if (idx >= this.numFrames)
             idx = this.numFrames;
         this.frameNum = idx;
         this.prevFrame = null;
+        this.playTime = this.getFrameTime(idx);   
+        this.prevClockTime = getClockTime();
     }
     
-    seekIdx(idx) {
-        this.seekIdx_(idx);
+    // This returns the time associated with a frame index.
+    // However, this is a bit problematical, as frames are not
+    // necessarily synchronous.
+    getFrameTime(idx) {
+        return idx / this.framesPerSec;
+    }
+
+    getFrameNum(t) {
+        return Math.round(t*this.framesPerSec);
     }
 
     getCurrentIdx() {
         return this.frameNum;
     }
 
-    getCurrentTime() {
-        return this.frameNum / this.framesPerSec;
+    getPlayTime() {
+        return this.playTime;
+        //return this.frameNum / this.framesPerSec;
     }
     
-    seekTime(t) {
-        this.frameNum = t*this.framesPerSec;
+    setPlayTime(t) {
+        this.frameNum = this.getFrameNum(t);
+        this.playTime = t;
+    }
+
+    getPlaySpeed() {
+        return this.playSpeed;
+    }
+
+    setPlaySpeed(speed) {
+        this.setPlayTime(this.getPlayTime()); // update hidden time bookeeping
+        this.playSpeed = speed;
+        $("#speed").html(sprintf("%.2f", player.playSpeed));
     }
     
     showTime() {
@@ -233,7 +258,7 @@ class Player {
         //var v = this.frameNum * 1000 / this.bodyFrames.length;
         var v = this.frameNum * 1000 / this.numFrames;
         $("#timeSlider").val(v);
-        $("#time").html(sprintf("%.2f", this.getCurrentTime()));
+        $("#time").html(sprintf("%.2f", this.getPlayTime()));
         $("#duration").html(sprintf("%.2f", this.duration));
     }
 
@@ -277,10 +302,15 @@ class Player {
         this.seekIdx(1);
         this.play();
         this.data = data;
+        if (this.sessionCallback) {
+            this.sessionCallback();
+            this.sessionCallback = null;
+        }
     }
 
     play() {
         this.playing = true;
+        this.setPlayTime(this.getPlayTime());
     }
 
     pause() {
@@ -296,8 +326,11 @@ class Player {
         if (this.frameNum >= this.numFrames) {
             this.playing = false;
         }
+        var t = getClockTime();
+        var dt = t - this.prevClockTime;
+        this.prevClockTime = t;
         if (this.playing) {
-            this.frameNum++;
+            this.setPlayTime(this.playTime + dt*this.playSpeed);
         }
         if (this.frameNum != this.prevFrameNum) {
             var url = this.recsDir+this.recordingId+"/image"+
@@ -343,6 +376,7 @@ function update()
             scale: p.scale});
     }
     player.redraw();
+    player.setPlaySpeed(player.playSpeed);
 }
 
 function updateControls()
@@ -357,7 +391,24 @@ $(document).ready(()=> {
     var recId = getParameterByName("recId");
     if (!recId)
         recId = defaultRecId;
-    player = new Player(recId);
+    player = new Player();
+    player.setSession(recId, null, () => {
+        console.log("************************");
+        var t0 = getFloatParameterByName("playTime");
+        if (t0 != null) {
+            console.log("set initial playTime "+t0);
+            player.setPlayTime(t0);
+        }
+        var speed = getFloatParameterByName("playSpeed");
+        if (speed != null) {
+            console.log("set initial playSpeed "+speed);
+            player.setPlaySpeed(speed);
+        }
+        if (getParameterByName("paused")) {
+            player.pause();
+        }
+    });
+
     $("#resetButton").click(() => { player.seekIdx(1); });
     $("#playButton").click(() => { player.play(); });
     $("#pauseButton").click(() => { player.pause(); });
@@ -385,6 +436,7 @@ $(document).ready(()=> {
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
+    gui.add(player, "playSpeed", -2, 4).onChange(update);
     var lg = gui.addFolder("Leap");
     lg.add(player, 'Rx', 0, 360).onChange(update);
     lg.add(player, 'Ry', 0, 360).onChange(update);
