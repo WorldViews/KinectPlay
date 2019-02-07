@@ -134,7 +134,9 @@ class Viewer {
                 this.draggedJoint = jointId;
                 var n = trail.low + ret.iMin;
                 this.draggedBody = trail.bodyIdx;
-                this.player.seekIdx(n);
+                var t = this.player.getFrameTime(n);
+//                this.player.seekIdx(n);
+                this.player.requestPlayTime(t);
             }
         }
     }
@@ -156,7 +158,9 @@ class Viewer {
         var n = low + ret.iMin;
         //console.log("low "+low+" iMin "+ret.iMin+"  n: "+n);
         //this.player.redraw();
-        this.player.seekIdx(n);
+        //this.player.seekIdx(n);
+        var t = this.player.getFrameTime(n);
+        this.player.requestPlayTime(t);
         return ret;
     }
 

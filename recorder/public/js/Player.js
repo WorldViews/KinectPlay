@@ -86,6 +86,29 @@ function frameStats(frames)
     return dtVec;
 }
 
+class Controller {
+    constructor(player) {
+        this.player = player;
+        player.setPlaySpeed(0);
+        player.play();
+        this.requestedTime = player.getPlayTime();
+    }
+
+    requestPlayTime(t) {
+        this.requestedTime = t;
+    }
+
+    tick() {
+        var w = .6;
+        var p = this.player;
+        var dt = this.requestedTime - p.getPlayTime();
+        var speed = 3*dt;
+        var s = w*speed + (1-w)*p.getPlaySpeed();
+        p.setPlaySpeed(s);
+       // p.setPlaySpeed(0.9*p.getPlaySpeed());
+    }
+}
+
 class Player {
     constructor(recId) {
         this.setSession(recId);
@@ -118,6 +141,7 @@ class Player {
         this.showRecordedSkeletons = true;
         this.showTrails = true;
         this.controlMode = "RightHand";
+        this.playMode = "master";
         this.playSpeed = 1.0;
         this.playTime = 0;
         this.prevPlayTime = 0;
@@ -194,7 +218,7 @@ class Player {
         this.numFrames = 0;
         this.duration = 0;
         this.prevFrameNum = 0;
-        this.framesPerSec = 30.0;
+        this.framesPerSec = 14.0;
         this.bodyFrames = [];
         this.handFrames = [];
         this.lastBodyFrame = null;
@@ -238,6 +262,14 @@ class Player {
     setPlayTime(t) {
         this.frameNum = this.getFrameNum(t);
         this.playTime = t;
+    }
+
+    requestPlayTime(t) {
+        console.log("requestPlayTime "+t);
+        if (this.controller)
+            this.controller.requestPlayTime(t);
+        else
+            this.setPlayTime(t);
     }
 
     getPlaySpeed() {
@@ -317,6 +349,14 @@ class Player {
         this.playing = false;
     }
 
+    setPlayMode(mode) {
+        console.log("setPlayMode "+mode);
+        if (mode == "shared")
+            this.controller = new Controller(this);
+        else
+            this.controller = null;
+    }
+
     tick() {
         //console.log("tick...");
         if (this.loading)
@@ -326,6 +366,8 @@ class Player {
         if (this.frameNum >= this.numFrames) {
             this.playing = false;
         }
+        if (this.controller)
+            this.controller.tick();
         var t = getClockTime();
         var dt = t - this.prevClockTime;
         this.prevClockTime = t;
@@ -349,6 +391,12 @@ class Player {
                     this.currentImage = this.newImage;
                     this.pendingLoad = false;
                     this.redraw();
+                });
+                this.newImage.addEventListener('error', () => {
+                    //console.log("newImage loaded");
+                    //this.currentImage = this.newImage;
+                    this.pendingLoad = false;
+                    console.log("***************** Image Load Error *******");
                 });
             }
             this.prevFrameNum = this.frameNum;
@@ -417,7 +465,9 @@ $(document).ready(()=> {
         // console.log("slider: "+val);
         var rt = val/1000.0;
         var i = Math.round(rt*player.numFrames);
-        player.seekIdx(i);
+        var t = player.getFrameTime(i);
+        //player.seekIdx(i);
+        player.requestPlayTime(t);
     });
     $("#controlMode").click(() => {
         var mode = $("#controlMode").val();
@@ -437,6 +487,10 @@ $(document).ready(()=> {
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
     gui.add(player, "playSpeed", -2, 4).onChange(update);
+    gui.add(player, "playMode", ["master", "shared"]).onChange(() => {
+        player.setPlayMode(player.playMode);
+        update();
+    });
     var lg = gui.addFolder("Leap");
     lg.add(player, 'Rx', 0, 360).onChange(update);
     lg.add(player, 'Ry', 0, 360).onChange(update);
