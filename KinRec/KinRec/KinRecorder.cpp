@@ -9,6 +9,7 @@
 #include "TrailRecorder.h"
 #include "KinRecorder.h"
 
+int serving = 0;
 
 cv::Scalar colors[] = {
 	cv::Scalar(255,0,0),  // HandState_Unknown
@@ -141,6 +142,9 @@ void KinRecorder::run_()
 	trackedJoints.push_back(JointType_HandRight);
 	double deltaT = 0;
 	double maxDeltaT = 0;
+	double avgDeltaT = 0.01;
+	double avgFrameRate = 0; // running average
+	double w = .2; // weight for running average
 	while (1) {
 		frameNum++;
 		kinect.setRGB();
@@ -150,6 +154,10 @@ void KinRecorder::run_()
 		kinect.setSkeleton();
 		frameTime = getClockTime();
 		deltaT = frameTime - prevFrameTime;
+		if (deltaT > 0) {
+			avgDeltaT = w*deltaT + (1-w)*avgDeltaT;
+			avgFrameRate = 1 / avgDeltaT;
+		}
 		maxDeltaT = max(deltaT, maxDeltaT);
 		prevFrameTime = frameTime;
 		std::string imagePath = recDir + "/" + format("image%d.jpg", frameNum);
@@ -161,11 +169,18 @@ void KinRecorder::run_()
 			//trailRec->update(trackedJoints);
 			cv::imwrite(imagePath, kinect.rgbImage);
 		}
+		if (serving) {
+			//cv::imwrite("lastImage.jpg", kinect.rgbImage);
+			vector<uchar> buf;
+			cv::imencode(".jpg", kinect.rgbImage, buf);
+			cout << "Encoded to JPG size " << buf.capacity() << "\n";
+		}
 		draw();
 		std::string stat = format("frame %d", frameNum);
 		stat += " " + recId;
 		if (useDepth)
 			stat += " D";
+		stat += format("  %4.1f fps ", avgFrameRate);
 		if (recording)
 			stat += " REC";
 		cv::putText(kinect.rgbImage, stat,
@@ -183,7 +198,8 @@ void KinRecorder::run_()
 			}
 			cv::imshow("depth", kinect.depthImage);
 		}
-		auto key = cv::waitKey(1);
+		int waitTime = 33;
+		auto key = cv::waitKey(waitTime);
 		if (key == 'd') {
 			useDepth = !useDepth;
 		}
@@ -197,6 +213,9 @@ void KinRecorder::run_()
 			deltaT = 0;
 			maxDeltaT = 0;
 		}
+		//if (key == 'm') {
+		//	serving = (serving + 1) % 2;
+		//}
 		if (key == 's') {
 			stopRecording();
 			cout << "maxDeltaT " << maxDeltaT << "\n";
