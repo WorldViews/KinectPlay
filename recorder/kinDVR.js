@@ -8,15 +8,14 @@ var Kinect2 = require('../lib/kinect2'), //change to 'kinect2' in a project of y
     io = require('socket.io').listen(server),
     fs = require('fs'),
     sharp = require('sharp');
-//    Jimp = require('jimp'),
-//    zlib = require('zlib');
 
 var kinect = new Kinect2();
-var recording = false;
-var viewing = true;
+var recordingImages = false;
+var recordingJSON = false;
 var bodyFrameNum = 0;
 var colorFrameNum = 0;
 var numFramesSaved = 0;
+var latestRequestTime = 0;
 var latestSavedFile = null;
 var noFilePath = "public/NoImage.jpg";
 var recStartTime;
@@ -32,9 +31,9 @@ var deleteOldImages = true;
 // also make sure the canvas size in the html matches the resized size
 //var compression = 3;
 var compression = 5;
-var origWidth = 1920;
-var origHeight = 1080;
-var origLength = 4 * origWidth * origHeight;
+var imageWidth = 1920;
+var imageHeight = 1080;
+var imageLength = 4 * imageWidth * imageHeight;
 
 
 function getClockTime() {
@@ -83,21 +82,23 @@ function sendSessions(dirPath, req, resp) {
 }
 
 
-function getSession() {
+function getSession(sessionId) {
     var m = new Date();
-    var session =
-        m.getUTCFullYear() + "_" +
-        (m.getUTCMonth() + 1) + "_" +
-        m.getUTCDate() + "__" +
-        m.getUTCHours() + "_" +
-        m.getUTCMinutes() + "_" +
-        m.getUTCSeconds();
-    recDir = "recordings/" + session;
+    if (!sessionId) {
+        sessionId =
+            m.getUTCFullYear() + "_" +
+            (m.getUTCMonth() + 1) + "_" +
+            m.getUTCDate() + "__" +
+            m.getUTCHours() + "_" +
+            m.getUTCMinutes() + "_" +
+            m.getUTCSeconds();
+    }
+    recDir = "recordings/" + sessionId;
     verifyDir("recordings");
-    mkDir(recDir);
+    verifyDir(recDir);
     imageDir = recDir;
     poseDir = recDir;
-    return session;
+    return sessionId;
 }
 
 function saveImage(path, data, width, height) {
@@ -106,10 +107,10 @@ function saveImage(path, data, width, height) {
     var height = height || 1080;
     var img = sharp(data, {raw: {width, height, channels:4}});
     img.toFile(path).then(() => {
-        console.log("Saved "+path);
+        //console.log("Saved "+path);
         if (deleteOldImages && latestSavedFile != null) {
             fs.unlink(latestSavedFile, () => {
-                console.log("deleted "+latestSavedFile);
+                //console.log("deleted "+latestSavedFile);
             });
         }
         latestSavedFile = path;
@@ -130,7 +131,7 @@ function saveJSON(path, obj) {
 function sendStats(sock, eventType) {
     //console.log("sendStats..."+eventType);
     obj = {
-        bodyFrameNum, colorFrameNum, recording, viewing,
+        bodyFrameNum, colorFrameNum, recordingImages, recordingJSON,
         eventType, recSession, compression
     };
     sock.emit('stats', obj);
@@ -144,7 +145,7 @@ function myBodyFrameCallback(data, sock) {
     //    console.log("bodyFrame");
     bodyFrameNum++;
     //console.log("bodyFrame "+bodyFrameNum);
-    if (recording) {
+    if (recordingJSON) {
         var posePath = "bodyFrame" + bodyFrameNum + ".json";
         posePath = poseDir + "/" + posePath;
         saveJSON(posePath, data);
@@ -159,35 +160,42 @@ function myOpenBodyReader(kinect) {
     kinect.nativeKinect2.openBodyReader(data => myBodyFrameCallback(data, io.sockets));
 }
 
-function startRecording() {
+function startRecording(recSession) {
     console.log("Start Recording");
-    if (recording) {
+    if (recordingImages) {
         console.log("already recording");
         return;
     }
-    recSession = getSession();
+    recSession = getSession(recSession);
     recStartTime = getClockTime();
     numFramesSaved = 0;
     console.log("recSession: " + recSession);
     console.log("recDir: " + recDir);
     bodyFrameNum = 0;
     colorFrameNum = 0;
-    recording = true;
+    recordingImages = true;
+    recordingJSON = true;
+    lastRequestTime = getClockTime();
 }
 
 function stopRecording() {
     console.log("Stop Recording");
-    recording = false;
+    recordingImages = false;
+    recordingJSON = false;
 }
 
 function startViewing() {
     console.log("Start Viewing");
-    viewing = true;
+    deleteOldImages = true;
+    if (!recordingImages) {
+        startRecording("TEMP_VIEW");
+        recordingJSON = false;
+    }
 }
 
 function stopViewing() {
     console.log("Stop Recording");
-    viewing = false;
+    stopRecording();
 }
 
 if (kinect.open()) {
@@ -202,7 +210,10 @@ if (kinect.open()) {
 
     app.get('/latestImage.jpg', function (req, res) {
         //res.sendFile(__dirname + '/public/record.html');
-        console.log("requested /latestImage.jpg ... sending "+latestSavedFile);
+        if (!recordingImages)
+            startViewing();
+        lastRequestTime = getClockTime();
+        //console.log("requested /latestImage.jpg ... sending "+latestSavedFile);
         res.sendFile(__dirname+ "/"+latestSavedFile);
     });
 
@@ -283,14 +294,17 @@ if (kinect.open()) {
     kinect.on('colorFrame', function (data) {
         colorFrameNum++;
         //console.log("colorFrame "+colorFrameNum);
-        if (recording) {
+        if (recordingImages) {
             var imagePath = imageDir + "/image" + colorFrameNum + ".jpg";
-            if (recording) {
-                var t = getClockTime();
-                var rt = t - recStartTime;
-                var fps = numFramesSaved / rt;
-                saveImage(imagePath, data, origWidth, origHeight);
+            var t = getClockTime();
+            var rt = t - recStartTime;
+            var fps = numFramesSaved / rt;
+            saveImage(imagePath, data, imageWidth, imageHeight);
+            if (numFramesSaved % 100 == 0)
                 console.log("Frames saved: " + numFramesSaved + " t: " + rt + " FPS: " + fps);
+            var timeSinceRequest = t - lastRequestTime;
+            if (timeSinceRequest > 3) {
+                stopRecording();
             }
         }
     });

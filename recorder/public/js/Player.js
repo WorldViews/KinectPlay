@@ -147,6 +147,7 @@ class Player {
         this.prevPlayTime = 0;
         this.prevClockTime = getClockTime();
         this.source = "remote";
+        this.forceRedraw = false;
 
         //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -358,6 +359,12 @@ class Player {
             this.controller = null;
     }
 
+    setSource(source) {
+        console.log("setSource "+source);
+        this.source = source;
+        this.forceRedraw = true;
+    }
+
     tick() {
         //console.log("tick...");
         if (this.loading)
@@ -375,17 +382,18 @@ class Player {
         if (this.playing) {
             this.setPlayTime(this.playTime + dt*this.playSpeed);
         }
-        if ((this.frameNum != this.prevFrameNum) || this.source == "local") {
+        if ((this.frameNum != this.prevFrameNum) || this.source == "local" || this.forceRedraw) {
             var url = this.recsDir+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
             if (this.source == "local")
-                url = "/latestImage.jpg?frameNum="+this.frameNum;
+                url = "/latestImage.jpg?t_="+t;
             $("#stats").html("url: "+url);
             if (this.pendingLoad) {
                 console.log("load collision");
                 this.loadCollisions++;
             }
             else {
+                this.forceRedraw = false;
                 this.newImage = new Image();
                 this.pendingLoad = true;
                 this.newImage.src = url;
@@ -478,6 +486,11 @@ $(document).ready(()=> {
         console.log("mode: "+mode);
         updateControls();
      })
+     $("#videoSource").click(() => {
+        var source = $("#videoSource").val();
+        player.setSource(source);
+        console.log("source: "+player.source);
+     })
     //loadSessions();
     $(window).resize(e => {
         //console.log("window.resize");
@@ -490,7 +503,6 @@ $(document).ready(()=> {
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
     gui.add(player, "playSpeed", -2, 4).onChange(update);
-    gui.add(player, "source", ["remote", "local"]).onChange(update);
     gui.add(player, "playMode", ["master", "shared"]).onChange(() => {
         player.setPlayMode(player.playMode);
         update();
