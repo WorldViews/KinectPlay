@@ -17,13 +17,15 @@ var colorFrameNum = 0;
 var numFramesSaved = 0;
 var latestRequestTime = 0;
 var latestSavedFile = null;
-var noFilePath = "public/NoImage.jpg";
+var noImagePath = "public/NoImage.jpg";
 var recStartTime;
 var recSession = null;
 var recDir = null;
 var imageDir = null;
 var poseDir = null;
 var deleteOldImages = true;
+var savedFiles = [];
+var numToKeep = 300; // about 10 seconds
 
 // compression is used as a factor to resize the image
 // the higher this number, the smaller the image
@@ -108,12 +110,17 @@ function saveImage(path, data, width, height) {
     var img = sharp(data, {raw: {width, height, channels:4}});
     img.toFile(path).then(() => {
         //console.log("Saved "+path);
-        if (deleteOldImages && latestSavedFile != null) {
-            fs.unlink(latestSavedFile, () => {
-                //console.log("deleted "+latestSavedFile);
+        if (deleteOldImages &&  savedFiles.length >= numToKeep) {
+            var fileToDelete = savedFiles.shift();
+            fs.unlink(fileToDelete, () => {
+                //console.log("deleted "+fileToDelete);
             });
         }
         latestSavedFile = path;
+        if (deleteOldImages) {
+            savedFiles.push(path);
+            //console.log("savedFiles.length "+savedFiles.length);
+        }
         numFramesSaved++;
     });
 }
@@ -214,7 +221,8 @@ if (kinect.open()) {
             startViewing();
         lastRequestTime = getClockTime();
         //console.log("requested /latestImage.jpg ... sending "+latestSavedFile);
-        res.sendFile(__dirname+ "/"+latestSavedFile);
+        var path = latestSavedFile || noImagePath;
+        res.sendFile(__dirname+ "/"+path);
     });
 
     app.get('/record', function (req, res) {
@@ -310,6 +318,6 @@ if (kinect.open()) {
     });
 
     kinect.openColorReader();
-    //        kinect.openBodyReader();
+    //kinect.openBodyReader();
     myOpenBodyReader(kinect);
 }
