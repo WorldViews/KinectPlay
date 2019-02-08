@@ -148,6 +148,7 @@ class Player {
         this.prevClockTime = getClockTime();
         this.source = "remote";
         this.forceRedraw = false;
+        this.trailWidth = 15;
 
         //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -382,11 +383,14 @@ class Player {
         if (this.playing) {
             this.setPlayTime(this.playTime + dt*this.playSpeed);
         }
-        if ((this.frameNum != this.prevFrameNum) || this.source == "local" || this.forceRedraw) {
+        if ((this.frameNum != this.prevFrameNum) || this.source != "recording" || this.forceRedraw) {
             var url = this.recsDir+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
             if (this.source == "local")
                 url = "/latestImage.jpg?t_="+t;
+            if (this.source == "sasaki") {
+                url = "http://sasaki:8002/latestImage.jpg?t_="+t;                
+            }
             $("#stats").html("url: "+url);
             if (this.pendingLoad) {
                 console.log("load collision");
@@ -501,6 +505,7 @@ $(document).ready(()=> {
     gui.add(player, 'WT', 0, 100).onChange(update);
     gui.add(player, 'secondsBehind', 0, 5).onChange(update);
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
+    gui.add(player, 'trailWidth',  1, 25).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
     gui.add(player, "playSpeed", -2, 4).onChange(update);
     gui.add(player, "playMode", ["master", "shared"]).onChange(() => {

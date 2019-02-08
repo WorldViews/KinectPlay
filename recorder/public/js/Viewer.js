@@ -235,9 +235,9 @@ class Viewer {
         this.drawControl();
     }
 
-    drawPolyline(pts, color) {
+    drawPolyline(pts, color, width) {
         var ctx = this.ctx;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = width || 1.5;
         ctx.strokeStyle = color;
         ctx.beginPath();
         for (var i = 0; i < pts.length; i++) {

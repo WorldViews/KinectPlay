@@ -35,7 +35,12 @@ var LHAND = 7;
 var RHAND = 11;
 var TRAIL_JOINTS = [RHAND, LHAND];
 
-var colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff'];
+var colors = [
+    'hsla(360,100%,50%,0.6)',
+    'hsla(120,100%,50%,0.6)',
+    //'#ff0000',
+    //'#00ff00',
+    '#0000ff', '#ffff00', '#00ffff', '#ff00ff'];
 
 // handstate circle size
 var HANDSIZE = 20;
@@ -132,7 +137,7 @@ class KinectTracker extends HumanBodyTracker {
 
     drawTrail(trail) {
         var viewer = this.viewer;
-        viewer.drawPolyline(trail.points, trail.color);
+        viewer.drawPolyline(trail.points, trail.color, this.player.trailWidth);
         //this.drawVelocity(trail);
         this.drawVelocityFromTrail(trail);
     }
