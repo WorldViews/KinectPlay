@@ -170,10 +170,18 @@ void KinRecorder::run_()
 			cv::imwrite(imagePath, kinect.rgbImage);
 		}
 		if (serving) {
-			//cv::imwrite("lastImage.jpg", kinect.rgbImage);
+			string latestPath = "C:\\GitHub\\WorldViews\\KinectPlay\\recorder\\public\\lastFrame.jpg";
+			string tmpPath = "C:\\GitHub\\WorldViews\\KinectPlay\\recorder\\public\\lastFrame_.jpg";
+			cv::imwrite(tmpPath, kinect.rgbImage);
+//			int rc = std::rename(tmpPath.c_str(), latestPath.c_str());
+			remove(latestPath.c_str());
+			int rc = std::rename(tmpPath.c_str(), latestPath.c_str());
+			cout << "rc: " << rc << "\n";
+			/*
 			vector<uchar> buf;
 			cv::imencode(".jpg", kinect.rgbImage, buf);
 			cout << "Encoded to JPG size " << buf.capacity() << "\n";
+			*/
 		}
 		draw();
 		std::string stat = format("frame %d", frameNum);
@@ -213,9 +221,9 @@ void KinRecorder::run_()
 			deltaT = 0;
 			maxDeltaT = 0;
 		}
-		//if (key == 'm') {
-		//	serving = (serving + 1) % 2;
-		//}
+		if (key == 'm') {
+			serving = (serving + 1) % 2;
+		}
 		if (key == 's') {
 			stopRecording();
 			cout << "maxDeltaT " << maxDeltaT << "\n";

@@ -14,3 +14,4 @@ junk/
 .node_pre_gyprc
 recorder/test.jpg
 recorder/lastLeapFrame.json
+recorder/public/lastFrame.jpg

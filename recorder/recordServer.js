@@ -15,6 +15,8 @@ var recording = false;
 var viewing = true;
 var bodyFrameNum = 0;
 var colorFrameNum = 0;
+var numFramesSaved;
+var recStartTime;
 var recSession = null;
 var recDir = null;
 var imageDir = null;

@@ -57,6 +57,10 @@
   <p>
     <div id="stats"></div>
     <div id="trackedControlId"></div>
+    <input id="startRecordingButton" type="button" value="Start Recording">
+    &nbsp;&nbsp;
+    <input id="stopRecordingButton" type="button" value="Stop Recording">
+    
   <img id="img1" width=64 height=48 style="display:none"></img>
   <script src="js/jquery-3.1.0.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -81,6 +85,18 @@
     }
     $("#kinectSessions").click(() => kinectSessions());
     $("#leapSessions").click(() => leapSessions());
+
+    $("#startRecordingButton").click(() => {
+        console.log("start recording");
+        $.get("/startRecording", (data) => { console.log("ok"); });
+    });
+    $("#stopRecordingButton").click(() => {
+        console.log("stop recording");
+        $.get("/stopRecording", (data) => {
+            console.log("ok");
+        });
+    });
+
 </script>
 </body>
 </html>

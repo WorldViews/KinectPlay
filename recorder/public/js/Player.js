@@ -146,6 +146,7 @@ class Player {
         this.playTime = 0;
         this.prevPlayTime = 0;
         this.prevClockTime = getClockTime();
+        this.source = "remote";
 
         //$("#useLiveTracker").click(() => { setUseTracker($("#useLiveTracker").is(':checked'); };
         $("#showTrails").click(() => { inst.showTrails = $("#showTrails").is(':checked')});
@@ -374,9 +375,11 @@ class Player {
         if (this.playing) {
             this.setPlayTime(this.playTime + dt*this.playSpeed);
         }
-        if (this.frameNum != this.prevFrameNum) {
+        if ((this.frameNum != this.prevFrameNum) || this.source == "local") {
             var url = this.recsDir+this.recordingId+"/image"+
                            this.frameNum+"."+this.frameType;
+            if (this.source == "local")
+                url = "/latestImage.jpg?frameNum="+this.frameNum;
             $("#stats").html("url: "+url);
             if (this.pendingLoad) {
                 console.log("load collision");
@@ -487,6 +490,7 @@ $(document).ready(()=> {
     gui.add(player, 'secondsAhead',  0, 5).onChange(update);
     gui.add(player, 'smoothNum',  [0,1,2,3,4,5,6,7,8,9,10]).onChange(update);
     gui.add(player, "playSpeed", -2, 4).onChange(update);
+    gui.add(player, "source", ["remote", "local"]).onChange(update);
     gui.add(player, "playMode", ["master", "shared"]).onChange(() => {
         player.setPlayMode(player.playMode);
         update();
