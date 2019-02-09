@@ -239,6 +239,7 @@ class Viewer {
         var ctx = this.ctx;
         ctx.lineWidth = width || 1.5;
         ctx.strokeStyle = color;
+        ctx.lineCap = "round";
         ctx.beginPath();
         for (var i = 0; i < pts.length; i++) {
             var pt = pts[i];

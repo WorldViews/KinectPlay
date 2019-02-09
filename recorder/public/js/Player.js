@@ -14,11 +14,13 @@ where the index of each joint object is the jointType.
 function fixFrame(frame)
 {
     frame.bodies.forEach(body => {
-        jvec = [];
-        body.joints.forEach(joint => {
-            jvec[joint.jointType] = joint;
-        });
-        body.joints = jvec;
+        if (body.joints) {
+            jvec = [];
+            body.joints.forEach(joint => {
+                jvec[joint.jointType] = joint;
+            });
+            body.joints = jvec;
+        }
     });
     return frame;
 }
@@ -229,6 +231,7 @@ class Player {
         this.loadIndex();
         this.playing = false;
         this.sessionCallback = callback;
+        this.setSource("recording");
     }
 
     seekIdx(idx) {
@@ -364,6 +367,7 @@ class Player {
         console.log("setSource "+source);
         this.source = source;
         this.forceRedraw = true;
+        $("#videoSource").val(source);
     }
 
     tick() {

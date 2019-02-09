@@ -26,6 +26,9 @@ var poseDir = null;
 var deleteOldImages = true;
 var savedFiles = [];
 var numToKeep = 300; // about 10 seconds
+var jsonRecs = [];
+var mostRecentFrame = null;
+var maxUnwatchedTime = 0;
 
 // compression is used as a factor to resize the image
 // the higher this number, the smaller the image
@@ -125,7 +128,6 @@ function saveImage(path, data, width, height) {
     });
 }
 
-
 function saveJSON(path, obj) {
     var json = JSON.stringify(obj, null, 4);
     //console.log("saving JSON to " + path);
@@ -152,10 +154,15 @@ function myBodyFrameCallback(data, sock) {
     //    console.log("bodyFrame");
     bodyFrameNum++;
     //console.log("bodyFrame "+bodyFrameNum);
+    data.frameTime = getClockTime();
+    data.bodyFrameNum = bodyFrameNum;
+    data.frameNum = bodyFrameNum;
+    mostRecentFrame = data;
     if (recordingJSON) {
         var posePath = "bodyFrame" + bodyFrameNum + ".json";
         posePath = poseDir + "/" + posePath;
         saveJSON(posePath, data);
+        //jsonRecs.push(data);
     }
     sock.emit('bodyFrame', data);
     sendStats(sock, 'bodyFrame');
@@ -167,26 +174,41 @@ function myOpenBodyReader(kinect) {
     kinect.nativeKinect2.openBodyReader(data => myBodyFrameCallback(data, io.sockets));
 }
 
-function startRecording(recSession) {
-    console.log("Start Recording");
+function startRecording(sessionId) {
+    console.log("Start Recording "+sessionId);
     if (recordingImages) {
-        console.log("already recording");
-        return;
+        console.log("already recording -- close and start new recording");
+        stopRecording();
     }
-    recSession = getSession(recSession);
+    recSession = getSession(sessionId);
     recStartTime = getClockTime();
     numFramesSaved = 0;
     console.log("recSession: " + recSession);
     console.log("recDir: " + recDir);
     bodyFrameNum = 0;
     colorFrameNum = 0;
+    jsonRecs = [];
+    maxUnwatchedTime = -1;
     recordingImages = true;
     recordingJSON = true;
     lastRequestTime = getClockTime();
+    deleteOldImages = false;
 }
 
 function stopRecording() {
-    console.log("Stop Recording");
+    console.log("Stop Recording "+recSession);
+    var t = getClockTime();
+    var duration = t - recStartTime;
+    var sessionObj = {
+        name: recSession,
+        type: 'kinect',
+        numFrames: colorFrameNum,
+        startTime: recStartTime,
+        duration: t-recStartTime,
+        frames: jsonRecs
+    }
+    var sessionPath = recDir + "/rec.json";
+    saveJSON(sessionPath, sessionObj);
     recordingImages = false;
     recordingJSON = false;
 }
@@ -197,6 +219,8 @@ function startViewing() {
     if (!recordingImages) {
         startRecording("TEMP_VIEW");
         recordingJSON = false;
+        deleteOldImages = true;
+        maxUnwatchedTime = 3;
     }
 }
 
@@ -239,16 +263,6 @@ if (kinect.open()) {
         res.sendFile(__dirname + '/public/record.html');
     });
 
-    app.get('/startViewing', function (req, res) {
-        startViewing();
-        res.sendFile(__dirname + '/public/record.html');
-    });
-
-    app.get('/stopViewing', function (req, res) {
-        stopViewing();
-        res.sendFile(__dirname + '/public/record.html');
-    });
-
     app.get('/sessions', function (req, resp) {
         console.log("/sessions path: " + req.path);
         var dirPath = req.path.slice("/dir/".length);
@@ -280,11 +294,6 @@ if (kinect.open()) {
         res.sendFile(__dirname + '/public/skel.html');
     });
 
-    app.get('/stop', function (req, res) {
-        stopRecording();
-        res.sendFile(__dirname + '/public/colorSkel.html');
-    });
-
     app.get('/colorSkel', function (req, res) {
         res.sendFile(__dirname + '/public/colorSkel.html');
     });
@@ -308,10 +317,14 @@ if (kinect.open()) {
             var rt = t - recStartTime;
             var fps = numFramesSaved / rt;
             saveImage(imagePath, data, imageWidth, imageHeight);
+            if (mostRecentFrame) {
+                mostRecentFrame.frameNum = colorFrameNum;
+                jsonRecs.push(mostRecentFrame);
+            }
             if (numFramesSaved % 100 == 0)
                 console.log("Frames saved: " + numFramesSaved + " t: " + rt + " FPS: " + fps);
             var timeSinceRequest = t - lastRequestTime;
-            if (timeSinceRequest > 3) {
+            if (maxUnwatchedTime > 0 && timeSinceRequest > maxUnwatchedTime) {
                 stopRecording();
             }
         }
