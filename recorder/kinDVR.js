@@ -77,6 +77,65 @@ function getNames(dirPath) {
 }
 
 
+function loadSession(name, callback) {
+    let session = {type: 'session', name: name};
+    let sessionDir = __dirname+"/recordings/"+name;
+    let sessionObjPath = sessionDir+"/session.json";
+    let recObjPath = sessionDir+"/rec.json";
+    if (fs.existsSync(sessionObjPath)) {
+        // it is a session with a session object
+        session.sessionObjPath = sessionObjPath;
+        readJSON(sessionObjPath).then(obj => {
+            callback(obj);
+        });
+        return;
+    } else if (fs.existsSync(recObjPath)) {
+        // it is a session with no session object, but with full recs.json
+        session.recObjPath = recObjPath;
+        readJSON(recObjPath).then(obj => {
+            //console.log("Got Session rec: "+obj);
+            console.log("numFrames "+obj.numFrames+" "+recObjPath);
+            for (var key in obj) {
+                if (key != "frames")
+                    session[key] = obj[key];
+            }
+            session.numFrames = obj.numFrames;
+            saveJSON(sessionObjPath, session); // cache for next time.
+            callback(session);
+        });
+        //callback(session);
+        return;
+    }
+    session.type = 'folder';
+    callback(session);
+}
+
+function getSessions(dirPath) {
+    return new Promise((resolve, reject) => {
+        fs.readdir(dirPath, function (err, names) {
+            if (err) {
+                console.log("err: " + err);
+                reject(err);
+                return;
+            }
+            var sessions = [];
+            var n = names.length;
+            names.forEach(name => {
+                loadSession(name, session => {
+                    console.log("loadSession got "+session+" "+n);
+                    if (session)
+                        sessions.push(session);
+                    if (--n == 0) {
+                        console.log("finished seeions: "+sessions);
+                        resolve(sessions);
+                    }
+                });
+            })
+         });
+    });
+}
+
+/*
 function sendSessions(dirPath, req, resp) {
     console.log("sendSessions: dirPath: " + dirPath);
     getNames(dirPath).then((items) => {
@@ -85,7 +144,7 @@ function sendSessions(dirPath, req, resp) {
         resp.send(obj);
     });
 }
-
+*/
 
 function getSession(sessionId) {
     var m = new Date();
@@ -135,6 +194,21 @@ function saveJSON(path, obj) {
         if (err) throw err;
         //console.log("Saved file "+path);
     });
+}
+
+function readJSON(path) {
+    console.log("readJSON "+path);
+    return new Promise((resolve, reject) => {
+        fs.readFile(path, (err, data) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                var obj = JSON.parse(data);
+                resolve(obj);
+            }
+        })
+    })
 }
 
 function sendStats(sock, eventType) {
@@ -270,6 +344,18 @@ if (kinect.open()) {
         getNames(dirPath).then((items) => {
             console.log("Names: " + items);
             var obj = { dir: dirPath, sessions: items };
+            resp.send(obj);
+        });
+    });
+
+    app.get('/getSessions', function (req, resp) {
+        console.log("/getSessions path: " + req.path);
+        var dirPath = req.path.slice("/dir/".length);
+        dirPath = __dirname + "/recordings";
+        getSessions(dirPath).then((sessions) => {
+            //console.log("Sessions: " + sessions);
+            var obj = { dir: dirPath, sessions: sessions };
+            console.log("Sessions: ", obj);
             resp.send(obj);
         });
     });
