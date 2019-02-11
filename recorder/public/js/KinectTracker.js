@@ -239,8 +239,10 @@ class KinectTracker extends HumanBodyTracker {
     drawBody(body, bodyIndex) {
         //draw hand states
         //console.log("drawBody "+bodyIndex, body);
-        this.updateHandState(body.leftHandState, body.joints[7]);
-        this.updateHandState(body.rightHandState, body.joints[11]);
+        if (0) {
+            this.updateHandState(body.leftHandState, body.joints[7]);
+            this.updateHandState(body.rightHandState, body.joints[11]);
+        }
         var ctx = this.viewer.ctx;
         var color = colors[bodyIndex];
         var s = 10
@@ -249,9 +251,15 @@ class KinectTracker extends HumanBodyTracker {
             if (this.visibleJoints && !this.visibleJoints[jointType])
                 continue;
             var joint = body.joints[jointType];
-            ctx.fillStyle = color;
+            //ctx.fillStyle = color;
             //ctx.fillRect(joint.colorX * this.width, joint.colorY * this.height, 10, 10);
-            ctx.fillRect(joint.colorX * viewer.width - s / 2.0, joint.colorY * viewer.height - s / 2.0, s, s);
+           // ctx.fillRect(joint.colorX * viewer.width - s / 2.0, joint.colorY * viewer.height - s / 2.0, s, s);
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(joint.colorX*viewer.width, joint.colorY*viewer.height,
+                        s, 0, Math.PI * 2, true);
+            ctx.fill();
+            ctx.closePath();
         }
         if (this.player.showSkels)
             this.drawSkel(body, bodyIndex, color);
