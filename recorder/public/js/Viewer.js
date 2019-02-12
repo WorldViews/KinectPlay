@@ -96,6 +96,7 @@ class Viewer {
         kinectTracker = this.kinectTracker;
         this.leapTracker = this.getLeapTracker();
         this.controlPoints = [];
+        this.grips = [];
         console.log("got leapTracker: ", this.leapTracker);
         $("#bodyCanvas").mousemove(e => inst.onMouseMove(e));
         $("#bodyCanvas").mousedown(e => inst.onMouseDown(e));
@@ -233,6 +234,7 @@ class Viewer {
             this.handleLiveBodies(player.liveBodyFrame);
         }
         this.drawControl();
+        this.drawBands(player.liveBodyFrame);
     }
 
     drawPolyline(pts, color, width) {
@@ -250,23 +252,68 @@ class Viewer {
 
     
     // pt and v are in image coordinates
-    drawVectorImage(pt, v) {
+    drawVectorImage(pt, v, L, color) {
+        L = L || 10.0;
+        color = color || "purple";
         pt = [pt[0]/viewer.width, pt[1]/viewer.height];
         v = [v[0]/viewer.width, v[1]/viewer.height];
         this.drawVector(pt,v);
     }
 
     // pt and v are in normalized image coordinates
-    drawVector(pt, v, L) {
+    drawVector0(pt, v, L, color) {
         var L = L || 10.0;
         var pt2 = [pt[0] + L * v[0], pt[1] + L * v[1]];
         var ctx = this.ctx;
         ctx.lineWidth = 5.5;
-        ctx.strokeStyle = 'purple';
+        ctx.strokeStyle = color;
         ctx.beginPath();
         ctx.moveTo(this.width * pt[0], this.height * pt[1]);
         ctx.lineTo(this.width * pt2[0], this.height * pt2[1]);
         ctx.stroke();
+    }
+
+    // pt and v are in normalized image coordinates
+    drawVector(pt, v, L, color) {
+        color = color || 'purple';
+        var L = L || 10.0;
+        var pt2 = [pt[0] + L*v[0], pt[1] + L*v[1]];
+        var ctx = this.ctx;
+        ctx.lineWidth = 5.5;
+        ctx.strokeStyle = color;
+        var v1 = {x: this.width * pt[0],  y: this.height * pt[1]};
+        var v2 = {x: this.width * pt2[0], y: this.height * pt2[1]};
+        ctx.beginPath();
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.stroke();
+        this.drawArrowhead(v1, v2, 16, ctx.strokeStyle);
+    }
+
+    //https://gist.github.com/jwir3/d797037d2e1bf78a9b04838d73436197
+    drawArrowhead(from, to, radius, style) {
+        var context = this.ctx;
+        var x_center = to.x;
+        var y_center = to.y;   
+        var angle, x, y;
+    
+        context.beginPath();
+        context.strokeStyle = style;
+        context.fillStyle = style;
+        angle = Math.atan2(to.y - from.y, to.x - from.x)
+        x = radius * Math.cos(angle) + x_center;
+        y = radius * Math.sin(angle) + y_center;
+        context.moveTo(x, y);    
+        angle += (1.0/3.0) * (2 * Math.PI)
+        x = radius * Math.cos(angle) + x_center;
+        y = radius * Math.sin(angle) + y_center;    
+        context.lineTo(x, y);    
+        angle += (1.0/3.0) * (2 * Math.PI)
+        x = radius *Math.cos(angle) + x_center;
+        y = radius *Math.sin(angle) + y_center;   
+        context.lineTo(x, y);    
+        context.closePath();    
+        context.fill();
     }
 
     drawControl() {
@@ -292,6 +339,49 @@ class Viewer {
             ctx.lineTo(pt[0], pt[1]);            
         }
         ctx.stroke();
+    }
+
+    drawLine(pt1, pt2, color, width) {
+        this.drawPolyline([pt1,pt2], color, width);
+    }
+
+    drawBands(frame) {
+        if (!frame)
+            return;
+        this.computeBands(frame);
+        this.grips.forEach(grip => this.drawLine(grip.gripPoint, grip.targetPoint));         
+    }
+
+    // currently this finds nearest point on trail.  That's not really
+    // what it should do.  It should find matching point on current body.
+    findMatchingPoint(pt, jointId) {
+        for (var trailId in this.trails) {
+            var trail = this.trails[trailId];
+            if (trail.jointId != jointId)
+                continue;
+            var ret = findNearestPoint(trail.points, pt);
+            return ret;
+        }
+    }
+
+    computeBands(frame)
+    {
+        this.grips = [];
+        var gripJoints = [LHAND,RHAND];
+        //console.log("controlJoints", controlJoints);
+        for (var bodyIndex = 0; bodyIndex < frame.bodies.length; bodyIndex++) {
+            var body = frame.bodies[bodyIndex];
+            if (!body.tracked)
+                continue;
+            for (var j=0; j< gripJoints.length; j++) {
+                var jointId = gripJoints[j];
+                var joint = body.joints[jointId];
+                var pt = [joint.colorX * this.width, joint.colorY * this.height];
+                var ret = this.findMatchingPoint(pt, jointId);
+                this.grips[j] = {jointId: jointId, name:"foo", gripPoint: pt, targetPoint: ret.pt};
+            }
+            break;
+        }
     }
 
     handleLiveBodies(frame) {

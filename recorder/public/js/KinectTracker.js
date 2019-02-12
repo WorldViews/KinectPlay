@@ -266,6 +266,14 @@ class KinectTracker extends HumanBodyTracker {
     }
 
     drawSkel(body, bodyIndex, color) {
+        if (player.sessionType == "posenet") {
+            this.drawBones(body, ["shoulderLeft", "elbowLeft", "wristLeft"], color);
+            this.drawBones(body, ["shoulderRight", "elbowRight", "wristRight"], color);
+            this.drawBones(body, ["shoulderLeft", "shoulderRight", "hipRight", "hipLeft", "shoulderLeft"], color);
+            this.drawBones(body, ["hipLeft", "kneeLeft", "ankleLeft"], color);
+            this.drawBones(body, ["hipRight", "kneeRight", "ankleRight"], color);
+            return;  
+        }
         this.drawBones(body, ["head", "neck"], color);
         this.drawBones(body, ["neck", "shoulderLeft", "elbowLeft", "handLeft"], color);
         this.drawBones(body, ["neck", "shoulderRight", "elbowRight", "handRight"], color);

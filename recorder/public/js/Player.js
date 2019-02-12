@@ -271,7 +271,7 @@ class Player {
     }
 
     requestPlayTime(t) {
-        console.log("requestPlayTime "+t);
+        //console.log("requestPlayTime "+t);
         if (this.controller)
             this.controller.requestPlayTime(t);
         else
